@@ -1,8 +1,10 @@
+import com.opencsv.CSVWriter;
 import com.opencsv.exceptions.CsvValidationException;
 import org.jfree.data.xy.XYSeries;
 import com.opencsv.CSVReader;
 
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 
 public class CSVInterpeter {
@@ -51,5 +53,15 @@ public class CSVInterpeter {
 
     public static XYSeries make_series(String path, String xCol, String yCol, String key) throws IOException, CsvValidationException {
         return make_series(path, xCol, yCol, key, false, false);
+    }
+
+    public static void write_series_to_csv(XYSeries series, String path, String xHeader, String yHeader) throws IOException {
+        try (CSVWriter writer = new CSVWriter(new FileWriter(path))) {
+            writer.writeNext(new String[] {xHeader, yHeader});
+
+            for (int i = 0; i < series.getItemCount(); i++) {
+                writer.writeNext(new String[] {series.getX(i).toString(), series.getY(i).toString()});
+            }
+        }
     }
 }
