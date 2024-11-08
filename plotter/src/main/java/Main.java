@@ -5,12 +5,23 @@ public class Main {
     public static void main(String[] args) {
         String path = "data\\accelerazione.csv";
 
+        Config config = new Config(
+                false,
+                "data\\lean_on_faces.csv",
+                "","","",
+                "Acc_X", "Acc_Y", "Acc_Z",
+                "Euler_X", "Euler_Y", "Euler_Z",
+                "Gyr_X", "Gyr_Y", "Gyr_Z",
+                "PacketCounter",
+                "", "", "",
+                false,
+                true,
+                true,
+                false
+        );
+
         try {
-            XYSeries xAcc = CSVInterpeter.make_series("data\\lean_on_faces.csv", "PacketCounter", "Acc_X", "xAcc");
-            //XYSeries yAcc = CSVInterpeter.make_series("data\\lean_on_faces.csv", "PacketCounter", "Acc_Y", "yAcc");
-            XYSeriesCollection dataset = new XYSeriesCollection();
-            dataset.addSeries(xAcc);
-            //dataset.addSeries(yAcc);
+            XYSeriesCollection dataset = CSVInterpeter.read_dataset(config);
 
             Plot p = new Plot(dataset);
 
