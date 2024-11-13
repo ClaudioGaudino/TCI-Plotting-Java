@@ -6,23 +6,20 @@ import org.jfree.chart.plot.XYPlot;
 import org.jfree.data.general.SeriesException;
 import org.jfree.data.xy.XYSeries;
 
-import java.util.ArrayList;
-import java.util.List;
-
 public class CrosshairListener implements ChartMouseListener, ChartProgressListener {
 
-    private final XYPlot xyPlot;
+    private XYPlot currentPlot;
     public XYSeries selectedPoints;
     private boolean clicked;
 
-    public CrosshairListener(XYPlot xyPlot) {
-        this.xyPlot = xyPlot;
+    public CrosshairListener() {
         clicked = false;
         selectedPoints = new XYSeries("Punti Selezionati", false, false);
     }
 
     @Override
     public void chartMouseClicked(ChartMouseEvent chartMouseEvent) {
+        currentPlot = chartMouseEvent.getChart().getXYPlot();
         clicked = true;
     }
 
@@ -33,18 +30,20 @@ public class CrosshairListener implements ChartMouseListener, ChartProgressListe
 
     @Override
     public void chartProgress(ChartProgressEvent chartProgressEvent) {
-        if(chartProgressEvent.getType() == ChartProgressEvent.DRAWING_FINISHED && clicked) {
+        if(chartProgressEvent.getType() == ChartProgressEvent.DRAWING_FINISHED && chartProgressEvent.getChart().getXYPlot().equals(currentPlot) && clicked ) {
             clicked = false;
-            //System.out.println(xyPlot.getDomainCrosshairValue() + ", " + xyPlot.getRangeCrosshairValue());
+
             try {
-                selectedPoints.add(xyPlot.getDomainCrosshairValue(), xyPlot.getRangeCrosshairValue());
+                selectedPoints.add(currentPlot.getDomainCrosshairValue(), currentPlot.getRangeCrosshairValue());
             } catch (SeriesException e) {
                 if (e.getMessage().equals("X-value already exists.")) {
-                    selectedPoints.remove(xyPlot.getDomainCrosshairValue());
+                    selectedPoints.remove(currentPlot.getDomainCrosshairValue());
                 }
                 else {
                     e.printStackTrace();
                 }
+            } finally {
+                currentPlot = null;
             }
         }
     }

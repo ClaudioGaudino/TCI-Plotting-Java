@@ -14,16 +14,16 @@ public class Main {
                 "Gyr_X", "Gyr_Y", "Gyr_Z",
                 "PacketCounter",
                 "", "", "",
-                false,
                 true,
                 true,
-                false
+                true,
+                true
         );
 
         try {
-            XYSeriesCollection dataset = CSVInterpeter.read_dataset(config);
+            XYSeriesCollection[] dataset = CSVInterpeter.read_dataset(config);
 
-            Plot p = new Plot(dataset);
+            Plot p = new Plot(dataset[0], dataset[1]);
 
         } catch (Exception e) {
             System.err.println("Some bad thing happen:");

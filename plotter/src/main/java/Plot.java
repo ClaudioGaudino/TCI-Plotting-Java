@@ -11,95 +11,63 @@ import org.jfree.data.xy.XYDataset;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 
+import javax.sound.sampled.Line;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.awt.geom.Line2D;
 import java.io.IOException;
 import java.util.List;
 
 public class Plot extends JFrame {
 
     private XYSeries selectedPoints;
-    private JFreeChart chart;
-    private XYPlot xyPlot;
 
-    /*public Plot(XYSeriesCollection dataset) {
-        super("Clickable Plot");
+    public Plot(XYSeriesCollection datasetAcc, XYSeriesCollection datasetAngVel) {
+        super("Selezione degli eventi");
 
-        chart = ChartFactory.createXYLineChart(
-                "Acceleration",
-                "Frame",
-                "Acceleration",
-                dataset,
-                PlotOrientation.VERTICAL,
-                true,
-                true,
-                false
-        );
-
-        xyPlot = chart.getXYPlot();
-
-        ChartPanel chartPanel = new ChartPanel(chart);
-        chartPanel.setPreferredSize(new Dimension(800, 600));
-
-        CrosshairListener listener = new CrosshairListener(xyPlot);
-
-        chartPanel.addChartMouseListener(listener);
-        chart.addProgressListener(listener);
-
-        add(chartPanel, BorderLayout.CENTER);
-
-        pack();
-        setDefaultCloseOperation(EXIT_ON_CLOSE);
-        setVisible(true);
-    }*/
-
-    public Plot(XYSeriesCollection dataset) {
-        super("clickable");
-
-        xyPlot = new XYPlot();
-        CrosshairListener listener = new CrosshairListener(xyPlot);
+        XYPlot xyPlotAcc = new XYPlot();
+        XYPlot xyPlotAngVel = new XYPlot();
+        CrosshairListener listener = new CrosshairListener();
         JButton saveButton = new JButton("Salva Punti Selezionati");
 
-        XYSeriesCollection scatterData = new XYSeriesCollection();
-        scatterData.addSeries(listener.selectedPoints);
-        XYItemRenderer scatterRenderer = new XYLineAndShapeRenderer(false, true);
-        ValueAxis scatterX = new NumberAxis("X");
-        ValueAxis scatterY = new NumberAxis("Y");
+        plotSetup(xyPlotAcc, listener.selectedPoints, datasetAcc);
+        plotSetup(xyPlotAngVel, listener.selectedPoints, datasetAngVel);
 
-        xyPlot.setDataset(0, scatterData);
-        xyPlot.setRenderer(0, scatterRenderer);
-        xyPlot.setDomainAxis(0, scatterX);
-        xyPlot.setRangeAxis(0, scatterY);
-        xyPlot.mapDatasetToDomainAxis(0, 0);
-        xyPlot.mapDatasetToRangeAxis(0, 0);
-
-        XYItemRenderer lineRenderer = new XYLineAndShapeRenderer(true, false);
-        ValueAxis lineX = new NumberAxis("X");
-        ValueAxis lineY = new NumberAxis("Y");
-
-        xyPlot.setDataset(1, dataset);
-        xyPlot.setRenderer(1, lineRenderer);
-        xyPlot.setDomainAxis(lineX);
-        xyPlot.setRangeAxis(lineY);
-        xyPlot.mapDatasetToDomainAxis(1, 0);
-        xyPlot.mapDatasetToRangeAxis(1, 0);
-
-        chart = new JFreeChart(
-                "chartname",
+        JFreeChart chartAcc = new JFreeChart(
+                "Accelerazione",
                 null,
-                xyPlot,
+                xyPlotAcc,
+                true
+        );
+        JFreeChart chartAngVel = new JFreeChart(
+                "Velocità angolare",
+                null,
+                xyPlotAngVel,
                 true
         );
 
-        ChartPanel chartPanel = new ChartPanel(chart);
-        chartPanel.setPreferredSize(new Dimension(800, 600));
+        ChartPanel chartPanelAcc = new ChartPanel(chartAcc);
+        chartPanelAcc.setPreferredSize(new Dimension(800, 600));
+        chartPanelAcc.addChartMouseListener(listener);
+        chartAcc.addProgressListener(listener);
+        chartAcc.addProgressListener(new ChartProgressListener() {
+            @Override
+            public void chartProgress(ChartProgressEvent chartProgressEvent) {
+                if (chartProgressEvent.getType() == ChartProgressEvent.DRAWING_FINISHED) {
+                    saveButton.setText("Salva " + listener.selectedPoints.getItemCount() + " eventi");
+                }
+            }
+        });
 
-        chartPanel.addChartMouseListener(listener);
-        chart.addProgressListener(listener);
+        ChartPanel chartPanelAngVel = new ChartPanel(chartAngVel);
+        chartPanelAngVel.setPreferredSize(new Dimension(800, 600));
+        chartPanelAcc.addChartMouseListener(listener);
+        chartAngVel.addProgressListener(listener);
+
 
         saveButton.addActionListener(new ActionListener() {
             @Override
@@ -113,11 +81,38 @@ public class Plot extends JFrame {
             }
         });
 
-        add(chartPanel, BorderLayout.CENTER);
+        add(chartPanelAcc, BorderLayout.WEST);
+        add(chartPanelAngVel, BorderLayout.EAST);
         add(saveButton, BorderLayout.SOUTH);
 
         pack();
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setVisible(true);
+    }
+
+    private static void plotSetup(XYPlot plot, XYSeries selectedPoints, XYSeriesCollection dataset) {
+        XYSeriesCollection scatterData = new XYSeriesCollection();
+        scatterData.addSeries(selectedPoints);
+        XYItemRenderer scatterRenderer = new XYLineAndShapeRenderer(false, true);
+        ValueAxis scatterX = new NumberAxis("X");
+        ValueAxis scatterY = new NumberAxis("Y");
+
+        plot.setDataset(0, scatterData);
+        plot.setRenderer(0, scatterRenderer);
+        plot.setDomainAxis(0, scatterX);
+        plot.setRangeAxis(0, scatterY);
+        plot.mapDatasetToDomainAxis(0, 0);
+        plot.mapDatasetToRangeAxis(0, 0);
+
+        XYItemRenderer lineRenderer = new XYLineAndShapeRenderer(true, false);
+        ValueAxis lineX = new NumberAxis("X");
+        ValueAxis lineY = new NumberAxis("Y");
+
+        plot.setDataset(1, dataset);
+        plot.setRenderer(1, lineRenderer);
+        plot.setDomainAxis(lineX);
+        plot.setRangeAxis(lineY);
+        plot.mapDatasetToDomainAxis(1, 0);
+        plot.mapDatasetToRangeAxis(1, 0);
     }
 }

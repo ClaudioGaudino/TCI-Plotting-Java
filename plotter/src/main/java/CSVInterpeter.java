@@ -1,5 +1,8 @@
 import com.opencsv.CSVWriter;
 import com.opencsv.exceptions.CsvValidationException;
+import org.apache.commons.math3.geometry.euclidean.threed.Rotation;
+import org.apache.commons.math3.geometry.euclidean.threed.RotationConvention;
+import org.apache.commons.math3.geometry.euclidean.threed.RotationOrder;
 import org.jfree.data.xy.XYSeries;
 import com.opencsv.CSVReader;
 import org.jfree.data.xy.XYSeriesCollection;
@@ -69,8 +72,9 @@ public class CSVInterpeter {
         }
     }
 
-    public static XYSeriesCollection read_dataset(Config config) throws IOException, CsvValidationException {
-        XYSeriesCollection dataset = new XYSeriesCollection();
+    public static XYSeriesCollection[] read_dataset(Config config) throws IOException, CsvValidationException {
+        XYSeriesCollection datasetAcc = new XYSeriesCollection();
+        XYSeriesCollection datasetAngVel = new XYSeriesCollection();
 
         int[] accOffsets = new int[]{0, 0, 0};
         int[] angOffsets = new int[]{0, 0, 0};
@@ -208,18 +212,40 @@ public class CSVInterpeter {
         XYSeries accYSeries = new XYSeries("Y Acceleration");
         XYSeries accZSeries = new XYSeries("Z Acceleration");
 
+        XYSeries angVelXSeries = new XYSeries("X Angular Velocity");
+        XYSeries angVelYSeries = new XYSeries("Y Angular Velocity");
+        XYSeries angVelZSeries = new XYSeries("Z Angular Velocity");
+
         while (!frames.isEmpty()) {
             double frame = frames.remove(0);
 
-            if (config.isPlotX()) accXSeries.add(frame, accX.remove(0));
-            if (config.isPlotY()) accYSeries.add(frame, accY.remove(0));
-            if (config.isPlotZ()) accZSeries.add(frame, accZ.remove(0));
+            if (config.isPlotX()) {
+                accXSeries.add(frame, accX.remove(0));
+                angVelXSeries.add(frame, angVelX.remove(0));
+            }
+            if (config.isPlotY()) {
+                accYSeries.add(frame, accY.remove(0));
+                angVelYSeries.add(frame, angVelY.remove(0));
+            }
+            if (config.isPlotZ()) {
+                accZSeries.add(frame, accZ.remove(0));
+                angVelZSeries.add(frame, angVelZ.remove(0));
+            }
         }
 
-        if (config.isPlotX()) dataset.addSeries(accXSeries);
-        if (config.isPlotY()) dataset.addSeries(accYSeries);
-        if (config.isPlotZ()) dataset.addSeries(accZSeries);
+        if (config.isPlotX()) {
+            datasetAcc.addSeries(accXSeries);
+            datasetAngVel.addSeries(angVelXSeries);
+        }
+        if (config.isPlotY()) {
+            datasetAcc.addSeries(accYSeries);
+            datasetAngVel.addSeries(angVelYSeries);
+        }
+        if (config.isPlotZ()) {
+            datasetAcc.addSeries(accZSeries);
+            datasetAngVel.addSeries(angVelZSeries);
+        }
 
-        return dataset;
+        return new XYSeriesCollection[]{datasetAcc, datasetAngVel};
     }
 }
