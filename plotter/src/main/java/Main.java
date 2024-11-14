@@ -5,7 +5,7 @@ public class Main {
     public static void main(String[] args) {
         String path = "data\\accelerazione.csv";
 
-        Config config = new Config(
+        /*Config config = new Config(
                 false,
                 "data\\lean_on_faces.csv",
                 "","","",
@@ -17,6 +17,21 @@ public class Main {
                 true,
                 true,
                 true,
+                true
+        );*/
+
+        Config config = new Config(
+                true,
+                "",
+                "data\\accelerazione.csv", "data\\angoli.csv", "data\\vel_ang.csv",
+                "GSensor.X", "GSensor.Y", "GSensor.Z",
+                "GSensor.X", "GSensor.Y", "GSensor.Z",
+                "GSensor.X", "GSensor.Y", "GSensor.Z",
+                "Frame",
+                "", "", "",
+                true,
+                true,
+                false,
                 true
         );
 

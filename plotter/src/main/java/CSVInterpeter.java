@@ -1,13 +1,9 @@
 import com.opencsv.CSVWriter;
 import com.opencsv.exceptions.CsvValidationException;
-import org.apache.commons.math3.geometry.euclidean.threed.Rotation;
-import org.apache.commons.math3.geometry.euclidean.threed.RotationConvention;
-import org.apache.commons.math3.geometry.euclidean.threed.RotationOrder;
 import org.jfree.data.xy.XYSeries;
 import com.opencsv.CSVReader;
 import org.jfree.data.xy.XYSeriesCollection;
 
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -85,13 +81,17 @@ public class CSVInterpeter {
         List<Double> accY = new ArrayList<>();
         List<Double> accZ = new ArrayList<>();
 
+        List<Double> angX = new ArrayList<>();
+        List<Double> angY = new ArrayList<>();
+        List<Double> angZ = new ArrayList<>();
+
         List<Double> angVelX = new ArrayList<>();
         List<Double> angVelY = new ArrayList<>();
         List<Double> angVelZ = new ArrayList<>();
 
         List<Double> frames = new ArrayList<>();
 
-        double angX = 0, angY = 0, angZ = 0, accXTmp = 0, accYTmp = 0, accZTmp = 0, angVelXTmp = 0, angVelYTmp = 0, angVelZTmp = 0;
+        double angXTmp = 0, angYTmp = 0, angZTmp = 0, accXTmp = 0, accYTmp = 0, accZTmp = 0, angVelXTmp = 0, angVelYTmp = 0, angVelZTmp = 0;
 
         if (!config.isMultifile()) {
             try (CSVReader reader = new CSVReader(new FileReader(config.getFilePath()))) {
@@ -158,13 +158,13 @@ public class CSVInterpeter {
                                 accZTmp = value;
                             }
                             else if(angOffsets[0] == i) {
-                                angX = value;
+                                angXTmp = value;
                             }
                             else if (angOffsets[1] == i) {
-                                angY = value;
+                                angYTmp = value;
                             }
                             else if (angOffsets[2] == i) {
-                                angZ = value;
+                                angZTmp = value;
                             }
                             else if (angVelOffsets[0] == i) {
                                 angVelXTmp = value;
@@ -183,8 +183,8 @@ public class CSVInterpeter {
                         }
 
                         if(config.isFree()) {
-                            double[] accRot = RotationMaths.rotate(angX, angY, angZ, accXTmp, accYTmp, accZTmp);
-                            double[] angVelRot = RotationMaths.rotate(angX, angY, angZ, angVelXTmp, angVelYTmp, angVelZTmp);
+                            double[] accRot = RotationMaths.rotate(angXTmp, angYTmp, angZTmp, accXTmp, accYTmp, accZTmp);
+                            double[] angVelRot = RotationMaths.rotate(angXTmp, angYTmp, angZTmp, angVelXTmp, angVelYTmp, angVelZTmp);
 
                             accX.add(accRot[0]);
                             accY.add(accRot[1]);
@@ -205,6 +205,120 @@ public class CSVInterpeter {
                         }
                     }
                 }
+            }
+        }
+        else {
+            try (CSVReader accReader = new CSVReader(new FileReader(config.getAccelerationFilePath()))) {
+                String[] line;
+                boolean firstLine = true;
+
+                int i = 0;
+                while ((line = accReader.readNext()) != null) {
+                    if (firstLine) {
+                        int j = 0;
+                        for (String entry : line) {
+                            if (entry.equals(config.getAccColX())) {
+                                accOffsets[0] = j;
+                            }
+                            else if (entry.equals(config.getAccColY())) {
+                                accOffsets[1] = j;
+                            }
+                            else if (entry.equals(config.getAccColZ())) {
+                                accOffsets[2] = j;
+                            }
+                            j++;
+                        }
+                        firstLine = false;
+                    }
+                    else {
+                        frames.add((double) i);
+                        addEntriesSimple(accOffsets, accX, accY, accZ, line);
+                    }
+                    i++;
+                }
+            }
+            try (CSVReader angReader = new CSVReader(new FileReader(config.getAnglesFilePath()))) {
+                String[] line;
+                boolean firstLine = true;
+
+                int i = 0;
+                while ((line = angReader.readNext()) != null) {
+                    if (firstLine) {
+                        for (String entry : line) {
+                            if (entry.equals(config.getAngColX())) {
+                                accOffsets[0] = i;
+                            }
+                            else if (entry.equals(config.getAngColY())) {
+                                accOffsets[1] = i;
+                            }
+                            else if (entry.equals(config.getAngColZ())) {
+                                accOffsets[2] = i;
+                            }
+                            i++;
+                        }
+                        firstLine = false;
+                    }
+                    else {
+                        addEntriesSimple(accOffsets, angX, angY, angZ, line);
+                    }
+                }
+            }
+            try (CSVReader angVelReader = new CSVReader(new FileReader(config.getAngularVelocityFilePath()))) {
+                String[] line;
+                boolean firstLine = true;
+
+                int i = 0;
+                while ((line = angVelReader.readNext()) != null) {
+                    if (firstLine) {
+                        for (String entry : line) {
+                            if (entry.equals(config.getAngVelColX())) {
+                                angVelOffsets[0] = i;
+                            }
+                            else if (entry.equals(config.getAngVelColY())) {
+                                angVelOffsets[1] = i;
+                            }
+                            else if (entry.equals(config.getAngVelColZ())) {
+                                angVelOffsets[2] = i;
+                            }
+                            i++;
+                        }
+                        firstLine = false;
+                    }
+                    else {
+                        addEntriesSimple(angVelOffsets, angVelX, angVelY, angVelZ, line);
+                    }
+                }
+            }
+
+            if (config.isFree()) {
+                List<Double> freeAccX = new ArrayList<>();
+                List<Double> freeAccY = new ArrayList<>();
+                List<Double> freeAccZ = new ArrayList<>();
+
+                List<Double> freeAngVelX = new ArrayList<>();
+                List<Double> freeAngVelY = new ArrayList<>();
+                List<Double> freeAngVelZ = new ArrayList<>();
+
+                for (int i  = 0; i < frames.size(); i++) {
+                    double[] accRot = RotationMaths.rotate(angX.get(i), angY.get(i), angZ.get(i), accX.get(i), accY.get(i), accZ.get(i));
+                    double[] angVelRot = RotationMaths.rotate(angX.get(i), angY.get(i), angZ.get(i), angVelX.get(i), angVelY.get(i), angVelZ.get(i));
+
+                    freeAccX.add(accRot[0]);
+                    freeAccY.add(accRot[1]);
+                    freeAccZ.add(accRot[2]);
+
+                    freeAngVelX.add(angVelRot[0]);
+                    freeAngVelY.add(angVelRot[1]);
+                    freeAngVelZ.add(angVelRot[2]);
+                }
+
+                accX = freeAccX;
+                accY = freeAccY;
+                accZ = freeAccZ;
+
+                angVelX = freeAngVelX;
+                angVelY = freeAngVelY;
+                angVelZ = freeAngVelZ;
             }
         }
 
@@ -247,5 +361,29 @@ public class CSVInterpeter {
         }
 
         return new XYSeriesCollection[]{datasetAcc, datasetAngVel};
+    }
+
+    private static int addEntriesSimple(int[] offsets, List<Double> X, List<Double> Y, List<Double> Z, String[] line) {
+        int i;
+        i = 0;
+        for (String entry : line) {
+            if (entry.isEmpty() || entry.isBlank()) {
+                i++;
+                continue;
+            }
+
+            double value = Double.parseDouble(entry);
+            if (offsets[0] == i) {
+                X.add(value);
+            }
+            else if (offsets[1] == i) {
+                Y.add(value);
+            }
+            else if (offsets[2] == i) {
+                Z.add(value);
+            }
+            i++;
+        }
+        return i;
     }
 }
