@@ -3,30 +3,24 @@ import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.axis.ValueAxis;
 import org.jfree.chart.event.ChartProgressEvent;
 import org.jfree.chart.event.ChartProgressListener;
-import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.xy.XYItemRenderer;
 import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
-import org.jfree.data.xy.XYDataset;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 
-import javax.sound.sampled.Line;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
-import java.awt.geom.Line2D;
 import java.io.IOException;
-import java.util.List;
 
-public class Plot extends JFrame {
+
+public class AccelerometerPlot extends JFrame {
 
     private XYSeries selectedPoints;
 
-    public Plot(XYSeriesCollection datasetAcc, XYSeriesCollection datasetAngVel) {
+    public AccelerometerPlot(XYSeriesCollection datasetAcc, XYSeriesCollection datasetAngVel) {
         super("Selezione degli eventi");
 
         XYPlot xyPlotAcc = new XYPlot();

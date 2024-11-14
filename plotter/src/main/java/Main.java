@@ -36,9 +36,9 @@ public class Main {
         );
 
         try {
-            XYSeriesCollection[] dataset = CSVInterpeter.read_dataset(config);
-
-            Plot p = new Plot(dataset[0], dataset[1]);
+            ConfigGUI gui = new ConfigGUI();
+            //XYSeriesCollection[] dataset = CSVInterpeter.read_dataset(config);
+            //AccelerometerPlot p = new AccelerometerPlot(dataset[0], dataset[1]);
 
         } catch (Exception e) {
             System.err.println("Some bad thing happen:");
