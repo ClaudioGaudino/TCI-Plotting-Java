@@ -6,6 +6,7 @@ import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 
 import javax.swing.*;
+import java.awt.*;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
@@ -14,12 +15,14 @@ import java.util.List;
 
 public class EMGDataPlotter extends JFrame {
 
-    public EMGDataPlotter(String csvFilePath) {
-        List<List<Double>> data = readCSVData(csvFilePath);
 
-        // Crea un grafico per "Right Gluteus maximus"
-        int columnIndex = 2; // Colonna "Right Gluteus maximus" (indice basato sull'ordine della tabella)
-        XYSeries series = new XYSeries("Right Gluteus Maximus");
+
+    public EMGDataPlotter(String csvFilePath) {
+
+        List<List<Double>> data = readCSVData(csvFilePath);
+        // Crea un grafico per "prima colonna muscolo"
+        int columnIndex = 2; // Prima colonna (indice basato sull'ordine della tabella)
+        XYSeries series = new XYSeries("Prima colonna");
 
         for (int i = 0; i < data.get(0).size(); i++) {
             series.add(i, data.get(columnIndex).get(i)); // usa 'i' come valore di tempo
@@ -43,6 +46,9 @@ public class EMGDataPlotter extends JFrame {
     }
 
     private List<List<Double>> readCSVData(String csvFilePath) {
+
+
+        //Lettura Dati per una sola colonna
         List<List<Double>> data = new ArrayList<>();
 
         try (BufferedReader br = new BufferedReader(new FileReader(csvFilePath))) {
