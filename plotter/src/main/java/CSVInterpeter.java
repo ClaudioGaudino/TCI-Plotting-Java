@@ -1,3 +1,4 @@
+import com.github.psambit9791.jdsp.filter.Butterworth;
 import com.opencsv.CSVWriter;
 import com.opencsv.exceptions.CsvValidationException;
 import org.jfree.data.xy.XYSeries;
@@ -7,10 +8,14 @@ import org.jfree.data.xy.XYSeriesCollection;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class CSVInterpeter {
+    private static final double G = 9.80665;
 
     public static XYSeries read_series(String path, String xCol, String yCol, String key, boolean autosort, boolean allowDuplicates) throws IOException, CsvValidationException {
         XYSeries series = new XYSeries(key, autosort, allowDuplicates);
@@ -68,7 +73,7 @@ public class CSVInterpeter {
         }
     }
 
-    public static XYSeriesCollection[] read_dataset(Config config) throws IOException, CsvValidationException {
+    public static XYSeriesCollection[] read_dataset(Config config, boolean filtered) throws IOException, CsvValidationException {
         XYSeriesCollection datasetAcc = new XYSeriesCollection();
         XYSeriesCollection datasetAngVel = new XYSeriesCollection();
 
@@ -188,7 +193,7 @@ public class CSVInterpeter {
 
                             accX.add(accRot[0]);
                             accY.add(accRot[1]);
-                            accZ.add(accRot[2]);
+                            accZ.add(accRot[2] - G);
 
                             angVelX.add(angVelRot[0]);
                             angVelY.add(angVelRot[1]);
@@ -305,7 +310,7 @@ public class CSVInterpeter {
 
                     freeAccX.add(accRot[0]);
                     freeAccY.add(accRot[1]);
-                    freeAccZ.add(accRot[2]);
+                    freeAccZ.add(accRot[2] - G);
 
                     freeAngVelX.add(angVelRot[0]);
                     freeAngVelY.add(angVelRot[1]);
@@ -321,6 +326,26 @@ public class CSVInterpeter {
                 angVelZ = freeAngVelZ;
             }
         }
+
+        if (filtered) {
+            Butterworth b = new Butterworth(100);
+            int order = 4;
+            double cutoffFreq = 10;
+            if (config.isPlotX()) {
+                accX = lowPassFilter(accX, b, order, cutoffFreq);
+                angVelX = lowPassFilter(angVelX, b, order, cutoffFreq);
+            }
+            if (config.isPlotY()) {
+                accY = lowPassFilter(accY, b, order, cutoffFreq);
+                angVelY = lowPassFilter(angVelY, b, order, cutoffFreq);
+            }
+            if (config.isPlotZ()) {
+                accZ = lowPassFilter(accZ, b, order, cutoffFreq);
+                angVelZ = lowPassFilter(angVelZ, b, order, cutoffFreq);
+            }
+        }
+
+
 
         XYSeries accXSeries = new XYSeries("X Acceleration");
         XYSeries accYSeries = new XYSeries("Y Acceleration");
@@ -385,5 +410,22 @@ public class CSVInterpeter {
             i++;
         }
         return i;
+    }
+
+    private static double[] listToArray(List<Double> list) {
+        double[] result = new double[list.size()];
+        int i = 0;
+        for (Double d : list) {
+            result[i] = d;
+            i++;
+        }
+
+        return result;
+    }
+
+    private static List<Double> lowPassFilter(List<Double> data, Butterworth b, int order, double cutoffFreq) {
+        double[] XF = listToArray(data);
+        XF = b.lowPassFilter(XF, order, cutoffFreq);
+        return Arrays.stream(XF).boxed().collect(Collectors.toList());
     }
 }

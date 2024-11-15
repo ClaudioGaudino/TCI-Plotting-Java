@@ -30,18 +30,16 @@ public class Main {
                 "Frame",
                 "", "", "",
                 true,
-                true,
+                false,
                 false,
                 true
         );
 
         try {
-            ConfigGUI gui = new ConfigGUI();
-            //XYSeriesCollection[] dataset = CSVInterpeter.read_dataset(config);
-            //AccelerometerPlot p = new AccelerometerPlot(dataset[0], dataset[1]);
-
+            //ConfigGUI gui = new ConfigGUI();
+            XYSeriesCollection[] dataset = CSVInterpeter.read_dataset(config, true);
+            AccelerometerPlot p = new AccelerometerPlot(dataset[0], dataset[1]);
         } catch (Exception e) {
-            System.err.println("Some bad thing happen:");
             e.printStackTrace();
         }
     }

@@ -1,8 +1,8 @@
+import jdk.jfr.Event;
 import org.jfree.chart.*;
 import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.axis.ValueAxis;
-import org.jfree.chart.event.ChartProgressEvent;
-import org.jfree.chart.event.ChartProgressListener;
+import org.jfree.chart.event.*;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.xy.XYItemRenderer;
 import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
@@ -17,9 +17,6 @@ import java.io.IOException;
 
 
 public class AccelerometerPlot extends JFrame {
-
-    private XYSeries selectedPoints;
-
     public AccelerometerPlot(XYSeriesCollection datasetAcc, XYSeriesCollection datasetAngVel) {
         super("Selezione degli eventi");
 
@@ -28,8 +25,22 @@ public class AccelerometerPlot extends JFrame {
         CrosshairListener listener = new CrosshairListener();
         JButton saveButton = new JButton("Salva Punti Selezionati");
 
-        plotSetup(xyPlotAcc, listener.selectedPoints, datasetAcc);
-        plotSetup(xyPlotAngVel, listener.selectedPoints, datasetAngVel);
+        XYSeries[] accContacts = EventIdentifier.getContactEvents(datasetAcc.getSeries(0), datasetAngVel.getSeries(0), true);
+        XYSeriesCollection accContactsCollection = new XYSeriesCollection();
+        accContactsCollection.addSeries(accContacts[0]);
+        accContactsCollection.addSeries(accContacts[1]);
+
+        plotSetup(xyPlotAcc, accContactsCollection, datasetAcc);
+
+        XYSeries[] angContacts = EventIdentifier.getContactEvents(datasetAcc.getSeries(0), datasetAngVel.getSeries(0), false);
+        XYSeriesCollection angContactsCollection = new XYSeriesCollection();
+        angContactsCollection.addSeries(angContacts[0]);
+        angContactsCollection.addSeries(angContacts[1]);
+
+        plotSetup(xyPlotAngVel, angContactsCollection, datasetAngVel);
+
+        //plotSetup(xyPlotAcc, listener.selectedPoints, datasetAcc);
+        //plotSetup(xyPlotAngVel, listener.selectedPoints, datasetAngVel);
 
         JFreeChart chartAcc = new JFreeChart(
                 "Accelerazione",
@@ -109,4 +120,29 @@ public class AccelerometerPlot extends JFrame {
         plot.mapDatasetToDomainAxis(1, 0);
         plot.mapDatasetToRangeAxis(1, 0);
     }
+
+    private static void plotSetup(XYPlot plot, XYSeriesCollection contacts, XYSeriesCollection dataset) {
+        XYItemRenderer scatterRenderer = new XYLineAndShapeRenderer(false, true);
+        ValueAxis scatterX = new NumberAxis("X");
+        ValueAxis scatterY = new NumberAxis("Y");
+
+        plot.setDataset(0, contacts);
+        plot.setRenderer(0, scatterRenderer);
+        plot.setDomainAxis(0, scatterX);
+        plot.setRangeAxis(0, scatterY);
+        plot.mapDatasetToDomainAxis(0, 0);
+        plot.mapDatasetToRangeAxis(0, 0);
+
+        XYItemRenderer lineRenderer = new XYLineAndShapeRenderer(true, false);
+        ValueAxis lineX = new NumberAxis("X");
+        ValueAxis lineY = new NumberAxis("Y");
+
+        plot.setDataset(1, dataset);
+        plot.setRenderer(1, lineRenderer);
+        plot.setDomainAxis(lineX);
+        plot.setRangeAxis(lineY);
+        plot.mapDatasetToDomainAxis(1, 0);
+        plot.mapDatasetToRangeAxis(1, 0);
+    }
+
 }

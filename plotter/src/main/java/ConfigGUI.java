@@ -11,9 +11,12 @@ public class ConfigGUI extends JFrame {
     public ConfigGUI() {
         super("Configurazione plot");
 
-        //Labels
+        //Panels
         JPanel panel = new JPanel();
+        JPanel formPanel = new JPanel();
+        JPanel feedbackPanel = new JPanel();
 
+        //Form Labels
         JLabel multifileLabel = new JLabel("Utilizzare file multipli:");
 
         JLabel filePathLabel = new JLabel("Path del file unico:");
@@ -33,7 +36,7 @@ public class ConfigGUI extends JFrame {
         JLabel plotYLabel = new JLabel("Rappresentazione valori asse Y");
         JLabel plotZlabel = new JLabel("Rappresentazione valori asse Z");
 
-        //Input Fields
+        //Form Input Fields
         JCheckBox multifileCheckBox = new JCheckBox();
 
         JTextField filePathField = new JTextField();
@@ -42,19 +45,19 @@ public class ConfigGUI extends JFrame {
         JTextField angFilePathField = new JTextField();
         JTextField angVelFilePathField = new JTextField();
 
-        JTextField accXColField = new JTextField();
-        JTextField accYColField = new JTextField();
-        JTextField accZColField = new JTextField();
+        JTextField accXColField = new JTextField("GSensor.X");
+        JTextField accYColField = new JTextField("GSensor.Y");
+        JTextField accZColField = new JTextField("GSensor.Z");
 
-        JTextField angXColField = new JTextField();
-        JTextField angYColField = new JTextField();
-        JTextField angZColField = new JTextField();
+        JTextField angXColField = new JTextField("GSensor.X");
+        JTextField angYColField = new JTextField("GSensor.Y");
+        JTextField angZColField = new JTextField("GSensor.Z");
 
-        JTextField angVelXColField = new JTextField();
-        JTextField angVelYColField = new JTextField();
-        JTextField angVelZColField = new JTextField();
+        JTextField angVelXColField = new JTextField("GSensor.X");
+        JTextField angVelYColField = new JTextField("GSensor.Y");
+        JTextField angVelZColField = new JTextField("GSensor.Z");
 
-        JTextField indexColField = new JTextField();
+        JTextField indexColField = new JTextField("Frame");
 
         JCheckBox freeCheckBox = new JCheckBox();
 
@@ -63,6 +66,10 @@ public class ConfigGUI extends JFrame {
         JCheckBox plotZCheckBox = new JCheckBox();
 
         JButton setConfig = new JButton("Crea grafico");
+
+        //Feedback Section
+        JTextArea feedbackArea = new JTextArea();
+        JScrollPane scroll = new JScrollPane(feedbackArea);
 
         multifileCheckBox.addActionListener(new ActionListener() {
             @Override
@@ -95,77 +102,123 @@ public class ConfigGUI extends JFrame {
                         plotZCheckBox.isSelected()
                 );
 
+                if (config.isMultifile()
+                        && (config.getAccelerationFilePath().isBlank()
+                        || config.getAnglesFilePath().isBlank()
+                        || config.getAngularVelocityFilePath().isBlank())) {
+                    feedbackArea.setText("L'opzione per l'utilizzo di molteplici file è stata selezionata, ma almeno uno dei tre percorsi è stato lasciato vuoto.");
+                    return;
+                }
+
+                if (!config.isMultifile() && config.getFilePath().isBlank()) {
+                    feedbackArea.setText("L'opzione per l'utilizzo di un file singolo è stata selezionata, ma il percorso del file è stato lasciato vuoto.");
+                    return;
+                }
+
+                if (config.getAccColX().isBlank() || config.getAccColY().isBlank() || config.getAccColZ().isBlank()) {
+                    feedbackArea.setText("Il nome di almeno una delle colonne dell'accelerazione è stato lasciato vuoto.");
+                    return;
+                }
+                if (config.getAngColX().isBlank() || config.getAngColY().isBlank() || config.getAngColZ().isBlank()) {
+                    feedbackArea.setText("Il nome di almeno una delle colonne dell'angolazione è stato lasciato vuoto.");
+                    return;
+                }
+                if (config.getAngVelColX().isBlank() || config.getAngVelColY().isBlank() || config.getAngVelColZ().isBlank()) {
+                    feedbackArea.setText("Il nome di almeno una delle colonne della velocità angolare è stato lasciato vuoto.");
+                    return;
+                }
+
+                if (config.getIndexCol().isBlank()) {
+                    feedbackArea.setText("Il nome della colonna indice è stato lasciato vuoto.");
+                }
+
+                if (!config.isPlotX() && !config.isPlotY() && !config.isPlotZ()) {
+                    feedbackArea.setText("Nessuno degli assi è stato selezionato, questo causerebbe un grafico vuoto!");
+                    return;
+                }
+
                 try {
-                    setVisible(false);
-
-                    XYSeriesCollection[] dataset = CSVInterpeter.read_dataset(config);
-
+                    XYSeriesCollection[] dataset = CSVInterpeter.read_dataset(config, false);
                     AccelerometerPlot p = new AccelerometerPlot(dataset[0], dataset[1]);
+
+                    setVisible(false);
                 } catch (IOException | CsvValidationException ex) {
-                    throw new RuntimeException(ex);
+                    feedbackArea.setText("C'è stato un errore:\n" + ex.getMessage());
                 }
             }
         });
 
-        accFilePathField.setEnabled(false);
-        angFilePathField.setEnabled(false);
-        angVelFilePathField.setEnabled(false);
+        multifileCheckBox.setSelected(true);
+        filePathField.setEnabled(false);
+
+        plotXCheckBox.setSelected(true);
+        plotYCheckBox.setSelected(true);
+        plotZCheckBox.setSelected(true);
+
+        feedbackArea.setEditable(false);
+        feedbackArea.setLineWrap(true);
+        feedbackArea.setPreferredSize(new Dimension(300, 600));
 
         add(panel);
+        panel.setLayout(new BorderLayout());
+        panel.add(formPanel, BorderLayout.WEST);
+        panel.add(feedbackPanel, BorderLayout.EAST);
 
-        panel.setLayout(new GridLayout(20, 2));
+        formPanel.setLayout(new GridLayout(20, 2));
         //Multifile
-        panel.add(multifileLabel);
-        panel.add(multifileCheckBox);
+        formPanel.add(multifileLabel);
+        formPanel.add(multifileCheckBox);
         //single file path
-        panel.add(filePathLabel);
-        panel.add(filePathField);
+        formPanel.add(filePathLabel);
+        formPanel.add(filePathField);
         //multiple files paths
-        panel.add(accFilePathLabel);
-        panel.add(accFilePathField);
-        panel.add(angFilePathLabel);
-        panel.add(angFilePathField);
-        panel.add(angVelFilePathLabel);
-        panel.add(angVelFilePathField);
+        formPanel.add(accFilePathLabel);
+        formPanel.add(accFilePathField);
+        formPanel.add(angFilePathLabel);
+        formPanel.add(angFilePathField);
+        formPanel.add(angVelFilePathLabel);
+        formPanel.add(angVelFilePathField);
         //Acceleration columns
-        panel.add(accColLabel);
-        panel.add(accXColField);
-        panel.add(new JLabel());
-        panel.add(accYColField);
-        panel.add(new JLabel());
-        panel.add(accZColField);
+        formPanel.add(accColLabel);
+        formPanel.add(accXColField);
+        formPanel.add(new JLabel());
+        formPanel.add(accYColField);
+        formPanel.add(new JLabel());
+        formPanel.add(accZColField);
         //Angles columns
-        panel.add(angColLabel);
-        panel.add(angXColField);
-        panel.add(new JLabel());
-        panel.add(angYColField);
-        panel.add(new JLabel());
-        panel.add(angZColField);
+        formPanel.add(angColLabel);
+        formPanel.add(angXColField);
+        formPanel.add(new JLabel());
+        formPanel.add(angYColField);
+        formPanel.add(new JLabel());
+        formPanel.add(angZColField);
         //Angular Velocity columns
-        panel.add(angVelColLabel);
-        panel.add(angVelXColField);
-        panel.add(new JLabel());
-        panel.add(angVelYColField);
-        panel.add(new JLabel());
-        panel.add(angVelZColField);
+        formPanel.add(angVelColLabel);
+        formPanel.add(angVelXColField);
+        formPanel.add(new JLabel());
+        formPanel.add(angVelYColField);
+        formPanel.add(new JLabel());
+        formPanel.add(angVelZColField);
         //Index column
-        panel.add(indexColLabel);
-        panel.add(indexColField);
+        formPanel.add(indexColLabel);
+        formPanel.add(indexColField);
         //Use free values
-        panel.add(freeLabel);
-        panel.add(freeCheckBox);
+        formPanel.add(freeLabel);
+        formPanel.add(freeCheckBox);
         //render axes
-        panel.add(plotXLabel);
-        panel.add(plotXCheckBox);
-        panel.add(plotYLabel);
-        panel.add(plotYCheckBox);
-        panel.add(plotZlabel);
-        panel.add(plotZCheckBox);
+        formPanel.add(plotXLabel);
+        formPanel.add(plotXCheckBox);
+        formPanel.add(plotYLabel);
+        formPanel.add(plotYCheckBox);
+        formPanel.add(plotZlabel);
+        formPanel.add(plotZCheckBox);
         //set config
-        panel.add(new JLabel());
-        panel.add(setConfig);
+        formPanel.add(new JLabel());
+        formPanel.add(setConfig);
 
-        setSize(800, 600);
+        feedbackPanel.add(scroll);
+
+        setSize(1100, 600);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setVisible(true);
     }
