@@ -99,7 +99,13 @@ public class CSVInterpeter {
         double angXTmp = 0, angYTmp = 0, angZTmp = 0, accXTmp = 0, accYTmp = 0, accZTmp = 0, angVelXTmp = 0, angVelYTmp = 0, angVelZTmp = 0;
 
         if (!config.isMultifile()) {
-            try (CSVReader reader = new CSVReader(new FileReader(config.getFilePath()))) {
+            String filepath = config.getFilePath();
+            if (config.getFilePath().endsWith(".emt")) {
+                EmtFileHandler.convert(filepath);
+                filepath = filepath.replace(".emt", ".csv");
+            }
+
+            try (CSVReader reader = new CSVReader(new FileReader(filepath))) {
                 String[] line;
                 boolean firstLine = true;
 
@@ -213,7 +219,13 @@ public class CSVInterpeter {
             }
         }
         else {
-            try (CSVReader accReader = new CSVReader(new FileReader(config.getAccelerationFilePath()))) {
+            String filepath = config.getAccelerationFilePath();
+            if (config.getAccelerationFilePath().endsWith(".emt")) {
+                EmtFileHandler.convert(filepath);
+                filepath = filepath.replace(".emt", ".csv");
+            }
+
+            try (CSVReader accReader = new CSVReader(new FileReader(filepath))) {
                 String[] line;
                 boolean firstLine = true;
 
@@ -242,7 +254,14 @@ public class CSVInterpeter {
                     i++;
                 }
             }
-            try (CSVReader angReader = new CSVReader(new FileReader(config.getAnglesFilePath()))) {
+
+            filepath = config.getAnglesFilePath();
+            if (config.getAnglesFilePath().endsWith(".emt")) {
+                EmtFileHandler.convert(filepath);
+                filepath = filepath.replace(".emt", ".csv");
+            }
+
+            try (CSVReader angReader = new CSVReader(new FileReader(filepath))) {
                 String[] line;
                 boolean firstLine = true;
 
@@ -268,7 +287,14 @@ public class CSVInterpeter {
                     }
                 }
             }
-            try (CSVReader angVelReader = new CSVReader(new FileReader(config.getAngularVelocityFilePath()))) {
+
+            filepath = config.getAngularVelocityFilePath();
+            if (config.getAngularVelocityFilePath().endsWith(".emt")) {
+                EmtFileHandler.convert(filepath);
+                filepath = filepath.replace(".emt", ".csv");
+            }
+
+            try (CSVReader angVelReader = new CSVReader(new FileReader(filepath))) {
                 String[] line;
                 boolean firstLine = true;
 
@@ -328,20 +354,27 @@ public class CSVInterpeter {
         }
 
         if (filtered) {
+            /*
+            CURRENT BEST FILTER PARAMETERS:
+            accOrder = 8 (started at 4)
+            accCutoffFreq = 10 (started at 10)
+            angOrder = 8 (started at 4)
+            accCutoffFreq = 10 (started at 10)
+             */
             Butterworth b = new Butterworth(100);
-            int order = 4;
-            double cutoffFreq = 10;
+            int accOrder = 8, angOrder = 8;
+            double accCutoffFreq = 10, angCutoffFreq = 5;
             if (config.isPlotX()) {
-                accX = lowPassFilter(accX, b, order, cutoffFreq);
-                angVelX = lowPassFilter(angVelX, b, order, cutoffFreq);
+                accX = lowPassFilter(accX, b, accOrder, accCutoffFreq);
+                angVelX = lowPassFilter(angVelX, b, angOrder, angCutoffFreq);
             }
             if (config.isPlotY()) {
-                accY = lowPassFilter(accY, b, order, cutoffFreq);
-                angVelY = lowPassFilter(angVelY, b, order, cutoffFreq);
+                accY = lowPassFilter(accY, b, accOrder, accCutoffFreq);
+                angVelY = lowPassFilter(angVelY, b, angOrder, angCutoffFreq);
             }
             if (config.isPlotZ()) {
-                accZ = lowPassFilter(accZ, b, order, cutoffFreq);
-                angVelZ = lowPassFilter(angVelZ, b, order, cutoffFreq);
+                accZ = lowPassFilter(accZ, b, accOrder, accCutoffFreq);
+                angVelZ = lowPassFilter(angVelZ, b, angOrder, angCutoffFreq);
             }
         }
 
@@ -427,5 +460,44 @@ public class CSVInterpeter {
         double[] XF = listToArray(data);
         XF = b.lowPassFilter(XF, order, cutoffFreq);
         return Arrays.stream(XF).boxed().collect(Collectors.toList());
+    }
+
+    private static List<Double> highPassFilter(List<Double> data, Butterworth b, int order, double cutoffFreq) {
+        double[] XF = listToArray(data);
+        XF = b.highPassFilter(XF, order, cutoffFreq);
+        return Arrays.stream(XF).boxed().collect(Collectors.toList());
+    }
+
+    public static void write_contacts(XYSeries[] accContacts, XYSeries[] angContacts, String path) throws IOException {
+        try (CSVWriter writer = new CSVWriter(new FileWriter(path))) {
+            writer.writeNext(new String[]{"Frame", "Accelerazione", "Velocità_angolare", "Destro"});
+
+            int sizeRight = accContacts[0].getItemCount();
+            int sizeLeft = accContacts[1].getItemCount();
+            XYSeries accRight = accContacts[0];
+            XYSeries accLeft = accContacts[1];
+            XYSeries angRight = angContacts[0];
+            XYSeries angLeft = angContacts[1];
+
+            int i = 0, j = 0;
+            while (i < sizeRight && j < sizeLeft) {
+                if ((double) accRight.getX(i) <= (double) accLeft.getX(j)) {
+                    writer.writeNext(new String[]{accRight.getX(i).toString(), accRight.getY(i).toString(), angRight.getY(i).toString(), "true"});
+                    i++;
+                }
+                else {
+                    writer.writeNext(new String[]{accLeft.getX(j).toString(), accLeft.getY(j).toString(), angLeft.getY(j).toString(), "false"});
+                    j++;
+                }
+            }
+            while (i < sizeRight) {
+                writer.writeNext(new String[]{accRight.getX(i).toString(), accRight.getY(i).toString(), angRight.getY(i).toString(), "true"});
+                i++;
+            }
+            while (j < sizeLeft) {
+                writer.writeNext(new String[]{accLeft.getX(j).toString(), accLeft.getY(j).toString(), angLeft.getY(j).toString(), "false"});
+                j++;
+            }
+        }
     }
 }

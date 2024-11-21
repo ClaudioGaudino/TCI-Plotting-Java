@@ -18,31 +18,42 @@ public class EventIdentifier {
         double[] acc = seriesToArray(accSeries);
         double[] ang = seriesToArray(angVelSeries);
 
-        double accDelta = 0, accLast = acc[0], accWindowEnd = acc[0];
-        double angDelta = 0, angLast = ang[0], angWindowEnd = acc[0];
+        double accLast = acc[0];
+        double angSlope = 0, angWindowEnd = acc[0];
 
         int window = 1;
 
         XYSeries contactsRight = new XYSeries("Right Contacts");
         XYSeries contactsLeft = new XYSeries("Left Contacts");
+        XYSeries accDebug = new XYSeries("Debug Acceleration");
+        XYSeries angDebug = new XYSeries("Debug Angular Velocity");
+
+        System.out.println("\n\nPrinting " + (doAcc ? "Acceleration" : "Angular Velocity") + "\n");
 
         for (int i = 0; i < size; i++) {
+            if (i >= window) {
+                angWindowEnd = ang[i - window];
+            }
+            angSlope = angWindowEnd - ang[i];
+
             if (acc[i] <= -G && accLast > -G) {
                 //Contact detected
-                if (angDelta < 0) {
+                if (doAcc) {
+                    accDebug.add(i - 1, accLast);
+                    System.out.println("Step at frame " + i);
+                } else {
+                    angDebug.add(i - window, angWindowEnd);
+                }
+
+                if (angSlope < 0) {
                     contactsLeft.add(i, doAcc ?  acc[i] : ang[i]);
                 }
-                else if (angDelta >= 0) {
+                else if (angSlope >= 0) {
                     contactsRight.add(i, doAcc ? acc[i] : ang[i]);
                 }
             }
-            accLast = acc[i];
-            angLast = ang[i];
 
-            if (i >= window) {
-                angWindowEnd = ang[i - (window - 1)];
-            }
-            angDelta = angWindowEnd - Math.abs(ang[i]);
+            accLast = acc[i];
         }
 
         return new XYSeries[]{contactsRight, contactsLeft};

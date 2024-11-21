@@ -21,23 +21,31 @@ public class AccelerometerPlot extends JFrame {
         super("Selezione degli eventi");
 
         XYPlot xyPlotAcc = new XYPlot();
+        xyPlotAcc.setDomainPannable(true);
+        xyPlotAcc.setRangePannable(true);
         XYPlot xyPlotAngVel = new XYPlot();
+        xyPlotAngVel.setDomainPannable(true);
+        xyPlotAngVel.setRangePannable(true);
         CrosshairListener listener = new CrosshairListener();
-        JButton saveButton = new JButton("Salva Punti Selezionati");
+
 
         XYSeries[] accContacts = EventIdentifier.getContactEvents(datasetAcc.getSeries(0), datasetAngVel.getSeries(0), true);
         XYSeriesCollection accContactsCollection = new XYSeriesCollection();
-        accContactsCollection.addSeries(accContacts[0]);
-        accContactsCollection.addSeries(accContacts[1]);
+        for (XYSeries series : accContacts) {
+            accContactsCollection.addSeries(series);
+        }
 
         plotSetup(xyPlotAcc, accContactsCollection, datasetAcc);
 
         XYSeries[] angContacts = EventIdentifier.getContactEvents(datasetAcc.getSeries(0), datasetAngVel.getSeries(0), false);
         XYSeriesCollection angContactsCollection = new XYSeriesCollection();
-        angContactsCollection.addSeries(angContacts[0]);
-        angContactsCollection.addSeries(angContacts[1]);
+        for (XYSeries series : angContacts) {
+            angContactsCollection.addSeries(series);
+        }
 
         plotSetup(xyPlotAngVel, angContactsCollection, datasetAngVel);
+
+        JButton saveButton = new JButton("Salva " + (accContacts[0].getItemCount() + accContacts[1].getItemCount()) + " Eventi");
 
         //plotSetup(xyPlotAcc, listener.selectedPoints, datasetAcc);
         //plotSetup(xyPlotAngVel, listener.selectedPoints, datasetAngVel);
@@ -59,14 +67,7 @@ public class AccelerometerPlot extends JFrame {
         chartPanelAcc.setPreferredSize(new Dimension(800, 600));
         chartPanelAcc.addChartMouseListener(listener);
         chartAcc.addProgressListener(listener);
-        chartAcc.addProgressListener(new ChartProgressListener() {
-            @Override
-            public void chartProgress(ChartProgressEvent chartProgressEvent) {
-                if (chartProgressEvent.getType() == ChartProgressEvent.DRAWING_FINISHED) {
-                    saveButton.setText("Salva " + listener.selectedPoints.getItemCount() + " eventi");
-                }
-            }
-        });
+
 
         ChartPanel chartPanelAngVel = new ChartPanel(chartAngVel);
         chartPanelAngVel.setPreferredSize(new Dimension(800, 600));
@@ -78,8 +79,8 @@ public class AccelerometerPlot extends JFrame {
             @Override
             public void actionPerformed(ActionEvent e) {
                 try {
-                    CSVInterpeter.write_series_to_csv(listener.selectedPoints, "results/selected_points.csv", "time", "Y");
-                    System.out.println("Saving complete");
+                    CSVInterpeter.write_contacts(accContacts, angContacts, "results/contacts.csv");
+                    System.out.println("Salvataggio compiuto");
                 } catch (IOException ex) {
                     throw new RuntimeException(ex);
                 }

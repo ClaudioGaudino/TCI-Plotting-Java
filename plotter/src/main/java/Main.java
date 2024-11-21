@@ -23,7 +23,22 @@ public class Main {
         Config config = new Config(
                 true,
                 "",
-                "data\\accelerazione.csv", "data\\angoli.csv", "data\\vel_ang.csv",
+                "data\\corsa1\\Accelerazioni_prova_1.emt", "data\\corsa1\\Angoli_prova_1.emt", "data\\corsa1\\Vel_ang_prova_1.emt",
+                "GSensor.X", "GSensor.Y", "GSensor.Z",
+                "GSensor.X", "GSensor.Y", "GSensor.Z",
+                "GSensor.X", "GSensor.Y", "GSensor.Z",
+                "Frame",
+                "", "", "",
+                true,
+                false,
+                false,
+                true
+        );
+
+        Config config2 = new Config(
+                true,
+                "",
+                "data\\accelerazione.emt", "data\\angoli.emt", "data\\vel_ang.emt",
                 "GSensor.X", "GSensor.Y", "GSensor.Z",
                 "GSensor.X", "GSensor.Y", "GSensor.Z",
                 "GSensor.X", "GSensor.Y", "GSensor.Z",
