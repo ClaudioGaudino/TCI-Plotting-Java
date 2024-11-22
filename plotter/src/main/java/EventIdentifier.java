@@ -25,12 +25,45 @@ public class EventIdentifier {
 
         XYSeries contactsRight = new XYSeries("Right Contacts");
         XYSeries contactsLeft = new XYSeries("Left Contacts");
-        XYSeries accDebug = new XYSeries("Debug Acceleration");
-        XYSeries angDebug = new XYSeries("Debug Angular Velocity");
+        XYSeries rightDebug = new XYSeries("Right Lift");
+        XYSeries leftDebug = new XYSeries("Left Lift");
 
         System.out.println("\n\nPrinting " + (doAcc ? "Acceleration" : "Angular Velocity") + "\n");
 
-        for (int i = 0; i < size; i++) {
+        for (int j = 0; j < size; j++) {
+            int i = j + 30;
+            switch (j) {
+                case 1347:
+                    rightDebug.add(i, doAcc ? acc[i] : ang[i]);
+                    break;
+                case 1352:
+                    contactsLeft.add(i, doAcc ? acc[i] : ang[i]);
+                    break;
+                case 1372:
+                    leftDebug.add(i, doAcc ? acc[i] : ang[i]);
+                    break;
+                case 1377:
+                    contactsRight.add(i, doAcc ? acc[i] : ang[i]);
+                    break;
+                case 1396:
+                    rightDebug.add(i, doAcc ? acc[i] : ang[i]);
+                    break;
+                case 1403:
+                    contactsLeft.add(i, doAcc ? acc[i] : ang[i]);
+                    break;
+                case 1421:
+                    leftDebug.add(i, doAcc ? acc[i] : ang[i]);
+                    break;
+                case 1428:
+                    contactsRight.add(i, doAcc ? acc[i] : ang[i]);
+                    break;
+                case 1444:
+                    rightDebug.add(i, doAcc ? acc[i] : ang[i]);
+                    break;
+                case 1458:
+                    contactsLeft.add(i, doAcc ? acc[i] : ang[i]);
+            }
+            /*
             if (i >= window) {
                 angWindowEnd = ang[i - window];
             }
@@ -39,10 +72,7 @@ public class EventIdentifier {
             if (acc[i] <= -G && accLast > -G) {
                 //Contact detected
                 if (doAcc) {
-                    accDebug.add(i - 1, accLast);
                     System.out.println("Step at frame " + i);
-                } else {
-                    angDebug.add(i - window, angWindowEnd);
                 }
 
                 if (angSlope < 0) {
@@ -54,9 +84,11 @@ public class EventIdentifier {
             }
 
             accLast = acc[i];
+
+             */
         }
 
-        return new XYSeries[]{contactsRight, contactsLeft};
+        return new XYSeries[]{contactsRight, contactsLeft, rightDebug, leftDebug};
     }
 
     private static double[] seriesToArray(XYSeries series) {

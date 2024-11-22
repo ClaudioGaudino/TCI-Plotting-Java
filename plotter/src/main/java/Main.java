@@ -53,9 +53,21 @@ public class Main {
         try {
             //ConfigGUI gui = new ConfigGUI();
             XYSeriesCollection[] dataset = CSVInterpeter.read_dataset(config, true);
+            dataset[0].addSeries(constant("-G", dataset[0].getItemCount(0), -9.80665));
+            dataset[0].addSeries(constant("+G", dataset[0].getItemCount(0), 9.80665));
+            //dataset[1].addSeries(constant("-G", dataset[1].getItemCount(0), -9.80665));
+
             AccelerometerPlot p = new AccelerometerPlot(dataset[0], dataset[1]);
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    private static XYSeries constant(String key, int length, double value) {
+        XYSeries constant = new XYSeries(key);
+        for(int i = 0; i < length; i++) {
+            constant.add(i, value);
+        }
+        return constant;
     }
 }

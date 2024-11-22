@@ -343,13 +343,17 @@ public class CSVInterpeter {
                     freeAngVelZ.add(angVelRot[2]);
                 }
 
+                angVelZ = freeAngVelZ;
+
                 accX = freeAccX;
                 accY = freeAccY;
                 accZ = freeAccZ;
 
-                angVelX = freeAngVelX;
-                angVelY = freeAngVelY;
-                angVelZ = freeAngVelZ;
+                //angVelX = freeAngVelX;
+                //angVelY = freeAngVelY;
+
+
+
             }
         }
 
@@ -362,8 +366,8 @@ public class CSVInterpeter {
             accCutoffFreq = 10 (started at 10)
              */
             Butterworth b = new Butterworth(100);
-            int accOrder = 8, angOrder = 8;
-            double accCutoffFreq = 10, angCutoffFreq = 5;
+            int accOrder = 4, angOrder = 4;
+            double accCutoffFreq = 10, angCutoffFreq = 10;
             if (config.isPlotX()) {
                 accX = lowPassFilter(accX, b, accOrder, accCutoffFreq);
                 angVelX = lowPassFilter(angVelX, b, angOrder, angCutoffFreq);
