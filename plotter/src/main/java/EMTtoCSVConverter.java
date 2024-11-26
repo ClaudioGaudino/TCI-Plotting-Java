@@ -5,7 +5,6 @@ import java.io.FileWriter;
 import java.io.IOException;
 
 public class EMTtoCSVConverter {
-
     /**
      * Metodo per convertire un file .emt in formato .csv.
      *
@@ -23,6 +22,10 @@ public class EMTtoCSVConverter {
 
             // Ciclo per leggere ogni riga del file .emt
             while ((line = reader.readLine()) != null) {
+                if (line.equals("")){
+                    continue;
+                }
+
                 // Ignora le righe di intestazione che non iniziano con "Frame"
                 if (!dataSection) {
                     if (line.trim().startsWith("Frame")) {

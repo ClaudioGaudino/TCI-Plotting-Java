@@ -24,8 +24,8 @@ public class Main {
         //Conversione file emt to csv elettromiografia
         EMTtoCSVConverter converter = new EMTtoCSVConverter();
 
-        String inputFilePath = "data\\SegnaliEMG.emt";
-        String outputFilePath = "data\\EMGs.csv";
+        String inputFilePath = "data\\segnale_1_env.emt";
+        String outputFilePath = "data\\ProfEMGs.csv";
 
         try {
             converter.convert(inputFilePath, outputFilePath);
@@ -35,7 +35,7 @@ public class Main {
         }
 
         //Plot Elettromiografia Per una sola colonna
-        String csvFilePath = "data\\EMGs.csv"; // Il file CSV generato
+        String csvFilePath = "data\\ProfEMGs.csv"; // Il file CSV generato
         SwingUtilities.invokeLater(() -> {
             EMGDataPlotter plotter = new EMGDataPlotter(csvFilePath);
             plotter.setSize(800, 600);
