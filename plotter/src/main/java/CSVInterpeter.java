@@ -343,21 +343,17 @@ public class CSVInterpeter {
                     freeAngVelZ.add(angVelRot[2]);
                 }
 
-                angVelZ = freeAngVelZ;
-
                 accX = freeAccX;
                 accY = freeAccY;
                 accZ = freeAccZ;
 
-                //angVelX = freeAngVelX;
-                //angVelY = freeAngVelY;
-
-
-
+                angVelX = freeAngVelX;
+                angVelY = freeAngVelY;
+                angVelZ = freeAngVelZ;
             }
         }
 
-        if (filtered) {
+        if (!filtered) {
             /*
             CURRENT BEST FILTER PARAMETERS:
             accOrder = 8 (started at 4)

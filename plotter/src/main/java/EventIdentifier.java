@@ -31,8 +31,8 @@ public class EventIdentifier {
         System.out.println("\n\nPrinting " + (doAcc ? "Acceleration" : "Angular Velocity") + "\n");
 
         for (int j = 0; j < size; j++) {
-            int i = j + 30;
-            switch (j) {
+            int i = j;
+            /*switch (j) {
                 case 1347:
                     rightDebug.add(i, doAcc ? acc[i] : ang[i]);
                     break;
@@ -62,8 +62,8 @@ public class EventIdentifier {
                     break;
                 case 1458:
                     contactsLeft.add(i, doAcc ? acc[i] : ang[i]);
-            }
-            /*
+            }*/
+
             if (i >= window) {
                 angWindowEnd = ang[i - window];
             }
@@ -85,7 +85,7 @@ public class EventIdentifier {
 
             accLast = acc[i];
 
-             */
+
         }
 
         return new XYSeries[]{contactsRight, contactsLeft, rightDebug, leftDebug};

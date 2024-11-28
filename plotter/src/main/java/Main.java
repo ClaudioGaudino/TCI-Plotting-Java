@@ -50,9 +50,22 @@ public class Main {
                 true
         );
 
+        Config config3 = new Config(
+                true,
+                "",
+                "data\\corsa2\\Accelerazioni_prova_4.emt", "data\\corsa2\\Angoli_prova_4.emt", "data\\corsa2\\Velocita_angolari_prova_4.emt",
+                "GSensor.X", "GSensor.Y", "GSensor.Z",
+                "GSensor.X", "GSensor.Y", "GSensor.Z",
+                "GSensor.X", "GSensor.Y", "GSensor.Z",
+                "Frame",
+                "", "", "",
+                true,
+                false, false, true
+        );
+
         try {
             //ConfigGUI gui = new ConfigGUI();
-            XYSeriesCollection[] dataset = CSVInterpeter.read_dataset(config, true);
+            XYSeriesCollection[] dataset = CSVInterpeter.read_dataset(config3, true);
             dataset[0].addSeries(constant("-G", dataset[0].getItemCount(0), -9.80665));
             dataset[0].addSeries(constant("+G", dataset[0].getItemCount(0), 9.80665));
             //dataset[1].addSeries(constant("-G", dataset[1].getItemCount(0), -9.80665));
