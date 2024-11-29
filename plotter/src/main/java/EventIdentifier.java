@@ -30,40 +30,32 @@ public class EventIdentifier {
 
         System.out.println("\n\nPrinting " + (doAcc ? "Acceleration" : "Angular Velocity") + "\n");
 
+        boolean hasCutoff = false;
+        int cutoff = 0;
+        double zeroDelta = 1;
         for (int j = 0; j < size; j++) {
             int i = j;
-            /*switch (j) {
-                case 1347:
-                    rightDebug.add(i, doAcc ? acc[i] : ang[i]);
-                    break;
-                case 1352:
-                    contactsLeft.add(i, doAcc ? acc[i] : ang[i]);
-                    break;
-                case 1372:
-                    leftDebug.add(i, doAcc ? acc[i] : ang[i]);
-                    break;
-                case 1377:
-                    contactsRight.add(i, doAcc ? acc[i] : ang[i]);
-                    break;
-                case 1396:
-                    rightDebug.add(i, doAcc ? acc[i] : ang[i]);
-                    break;
-                case 1403:
-                    contactsLeft.add(i, doAcc ? acc[i] : ang[i]);
-                    break;
-                case 1421:
-                    leftDebug.add(i, doAcc ? acc[i] : ang[i]);
-                    break;
-                case 1428:
-                    contactsRight.add(i, doAcc ? acc[i] : ang[i]);
-                    break;
-                case 1444:
-                    rightDebug.add(i, doAcc ? acc[i] : ang[i]);
-                    break;
-                case 1458:
-                    contactsLeft.add(i, doAcc ? acc[i] : ang[i]);
-            }*/
 
+            if (!hasCutoff) {
+                if (acc[i] > zeroDelta || acc[i] < -zeroDelta) {
+                    cutoff = i;
+                    hasCutoff = true;
+                    contactsRight.add(cutoff, doAcc ? acc[i] : ang[i]);
+                }
+            }
+            else {
+                if (i == cutoff + 470 ||
+                i == cutoff + 523 ||
+                i == cutoff + 571) {
+                    contactsLeft.add(i, doAcc ? acc[i] : ang[i]);
+                }
+                if (i == cutoff + 498 ||
+                i == cutoff + 549 ||
+                i == cutoff + 599) {
+                    contactsRight.add(i, doAcc ? acc[i] : ang[i]);
+                }
+            }
+/*
             if (i >= window) {
                 angWindowEnd = ang[i - window];
             }
@@ -85,7 +77,7 @@ public class EventIdentifier {
 
             accLast = acc[i];
 
-
+*/
         }
 
         return new XYSeries[]{contactsRight, contactsLeft, rightDebug, leftDebug};

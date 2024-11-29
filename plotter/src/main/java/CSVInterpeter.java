@@ -73,7 +73,7 @@ public class CSVInterpeter {
         }
     }
 
-    public static XYSeriesCollection[] read_dataset(Config config, boolean filtered) throws IOException, CsvValidationException {
+    public static Data read_dataset(Config config, boolean filtered) throws IOException, CsvValidationException {
         XYSeriesCollection datasetAcc = new XYSeriesCollection();
         XYSeriesCollection datasetAngVel = new XYSeriesCollection();
 
@@ -193,27 +193,17 @@ public class CSVInterpeter {
                             i++;
                         }
 
-                        if(config.isFree()) {
-                            double[] accRot = RotationMaths.rotate(angXTmp, angYTmp, angZTmp, accXTmp, accYTmp, accZTmp);
-                            double[] angVelRot = RotationMaths.rotate(angXTmp, angYTmp, angZTmp, angVelXTmp, angVelYTmp, angVelZTmp);
+                        accX.add(accXTmp);
+                        accY.add(accYTmp);
+                        accZ.add(accZTmp);
 
-                            accX.add(accRot[0]);
-                            accY.add(accRot[1]);
-                            accZ.add(accRot[2] - G);
+                        angX.add(angXTmp);
+                        angY.add(angYTmp);
+                        angZ.add(angZTmp);
 
-                            angVelX.add(angVelRot[0]);
-                            angVelY.add(angVelRot[1]);
-                            angVelZ.add(angVelRot[2]);
-                        }
-                        else {
-                            accX.add(accXTmp);
-                            accY.add(accYTmp);
-                            accZ.add(accZTmp);
-
-                            angVelX.add(angVelXTmp);
-                            angVelY.add(angVelYTmp);
-                            angVelZ.add(angVelZTmp);
-                        }
+                        angVelX.add(angVelXTmp);
+                        angVelY.add(angVelYTmp);
+                        angVelZ.add(angVelZTmp);
                     }
                 }
             }
@@ -320,105 +310,8 @@ public class CSVInterpeter {
                     }
                 }
             }
-
-            if (config.isFree()) {
-                List<Double> freeAccX = new ArrayList<>();
-                List<Double> freeAccY = new ArrayList<>();
-                List<Double> freeAccZ = new ArrayList<>();
-
-                List<Double> freeAngVelX = new ArrayList<>();
-                List<Double> freeAngVelY = new ArrayList<>();
-                List<Double> freeAngVelZ = new ArrayList<>();
-
-                for (int i  = 0; i < frames.size(); i++) {
-                    double[] accRot = RotationMaths.rotate(angX.get(i), angY.get(i), angZ.get(i), accX.get(i), accY.get(i), accZ.get(i));
-                    double[] angVelRot = RotationMaths.rotate(angX.get(i), angY.get(i), angZ.get(i), angVelX.get(i), angVelY.get(i), angVelZ.get(i));
-
-                    freeAccX.add(accRot[0]);
-                    freeAccY.add(accRot[1]);
-                    freeAccZ.add(accRot[2] - G);
-
-                    freeAngVelX.add(angVelRot[0]);
-                    freeAngVelY.add(angVelRot[1]);
-                    freeAngVelZ.add(angVelRot[2]);
-                }
-
-                accX = freeAccX;
-                accY = freeAccY;
-                accZ = freeAccZ;
-
-                angVelX = freeAngVelX;
-                angVelY = freeAngVelY;
-                angVelZ = freeAngVelZ;
-            }
         }
-
-        if (!filtered) {
-            /*
-            CURRENT BEST FILTER PARAMETERS:
-            accOrder = 8 (started at 4)
-            accCutoffFreq = 10 (started at 10)
-            angOrder = 8 (started at 4)
-            accCutoffFreq = 10 (started at 10)
-             */
-            Butterworth b = new Butterworth(100);
-            int accOrder = 4, angOrder = 4;
-            double accCutoffFreq = 10, angCutoffFreq = 10;
-            if (config.isPlotX()) {
-                accX = lowPassFilter(accX, b, accOrder, accCutoffFreq);
-                angVelX = lowPassFilter(angVelX, b, angOrder, angCutoffFreq);
-            }
-            if (config.isPlotY()) {
-                accY = lowPassFilter(accY, b, accOrder, accCutoffFreq);
-                angVelY = lowPassFilter(angVelY, b, angOrder, angCutoffFreq);
-            }
-            if (config.isPlotZ()) {
-                accZ = lowPassFilter(accZ, b, accOrder, accCutoffFreq);
-                angVelZ = lowPassFilter(angVelZ, b, angOrder, angCutoffFreq);
-            }
-        }
-
-
-
-        XYSeries accXSeries = new XYSeries("X Acceleration");
-        XYSeries accYSeries = new XYSeries("Y Acceleration");
-        XYSeries accZSeries = new XYSeries("Z Acceleration");
-
-        XYSeries angVelXSeries = new XYSeries("X Angular Velocity");
-        XYSeries angVelYSeries = new XYSeries("Y Angular Velocity");
-        XYSeries angVelZSeries = new XYSeries("Z Angular Velocity");
-
-        while (!frames.isEmpty()) {
-            double frame = frames.remove(0);
-
-            if (config.isPlotX()) {
-                accXSeries.add(frame, accX.remove(0));
-                angVelXSeries.add(frame, angVelX.remove(0));
-            }
-            if (config.isPlotY()) {
-                accYSeries.add(frame, accY.remove(0));
-                angVelYSeries.add(frame, angVelY.remove(0));
-            }
-            if (config.isPlotZ()) {
-                accZSeries.add(frame, accZ.remove(0));
-                angVelZSeries.add(frame, angVelZ.remove(0));
-            }
-        }
-
-        if (config.isPlotX()) {
-            datasetAcc.addSeries(accXSeries);
-            datasetAngVel.addSeries(angVelXSeries);
-        }
-        if (config.isPlotY()) {
-            datasetAcc.addSeries(accYSeries);
-            datasetAngVel.addSeries(angVelYSeries);
-        }
-        if (config.isPlotZ()) {
-            datasetAcc.addSeries(accZSeries);
-            datasetAngVel.addSeries(angVelZSeries);
-        }
-
-        return new XYSeriesCollection[]{datasetAcc, datasetAngVel};
+        return new Data(accX, accY, accZ, angX, angY, angZ, angVelX, angVelY, angVelZ);
     }
 
     private static int addEntriesSimple(int[] offsets, List<Double> X, List<Double> Y, List<Double> Z, String[] line) {
@@ -443,29 +336,6 @@ public class CSVInterpeter {
             i++;
         }
         return i;
-    }
-
-    private static double[] listToArray(List<Double> list) {
-        double[] result = new double[list.size()];
-        int i = 0;
-        for (Double d : list) {
-            result[i] = d;
-            i++;
-        }
-
-        return result;
-    }
-
-    private static List<Double> lowPassFilter(List<Double> data, Butterworth b, int order, double cutoffFreq) {
-        double[] XF = listToArray(data);
-        XF = b.lowPassFilter(XF, order, cutoffFreq);
-        return Arrays.stream(XF).boxed().collect(Collectors.toList());
-    }
-
-    private static List<Double> highPassFilter(List<Double> data, Butterworth b, int order, double cutoffFreq) {
-        double[] XF = listToArray(data);
-        XF = b.highPassFilter(XF, order, cutoffFreq);
-        return Arrays.stream(XF).boxed().collect(Collectors.toList());
     }
 
     public static void write_contacts(XYSeries[] accContacts, XYSeries[] angContacts, String path) throws IOException {
