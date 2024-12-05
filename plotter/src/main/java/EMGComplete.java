@@ -1,3 +1,5 @@
+import org.apache.commons.math3.analysis.interpolation.SplineInterpolator;
+import org.apache.commons.math3.analysis.polynomials.PolynomialSplineFunction;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
@@ -28,24 +30,23 @@ public class EMGComplete extends JFrame {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
 
-        // Leggi il file CSV
-        //readCSV(csvFilePath);
 
-        //Leggi il fileCSV + Filtraggio Passa-Banda
+        //Leggi il fileCSV + Filtraggio Butter
         readCSVAndFilter(csvFilePath);
 
 
-        // Pannello per i bottoni
+        //Pannello per i bottoni
         JPanel buttonPanel = new JPanel();
-        buttonPanel.setLayout(new GridLayout(2, emgLabels.size()));
+        buttonPanel.setLayout(new GridLayout(3, emgLabels.size()));
 
-        // Crea un bottone per ogni segnale EMG
+        /*// Crea un bottone per ogni segnale EMG
         for (int i = 0; i < emgLabels.size(); i++) {
             int index = i; // Indice per il segnale EMG
             JButton button = new JButton(emgLabels.get(i));
             button.addActionListener(e -> plotEMGSignal(index));
+            //button.addActionListener(e -> plotNormalizedSignal(index));
             buttonPanel.add(button);
-        }
+        }*/
 
         add(buttonPanel, BorderLayout.SOUTH);
 
@@ -53,6 +54,21 @@ public class EMGComplete extends JFrame {
         chartPanel = new ChartPanel(null);
         chartPanel.setPreferredSize(new Dimension(800, 400));
         add(chartPanel, BorderLayout.CENTER);
+
+        for (int i = 0; i < emgLabels.size(); i++) {
+            int index = i; // Indice per il segnale EMG
+
+            // Bottone per la visualizzazione filtrata
+            JButton button = new JButton(emgLabels.get(i));
+            button.addActionListener(e -> plotEMGSignal(index));
+            buttonPanel.add(button);
+
+            // Bottone per la normalizzazione con scelta del range
+            JButton normalizeButton = new JButton("Normalize con range " + emgLabels.get(i));
+            normalizeButton.addActionListener(e -> plotNormalizedWithRange(index));
+            buttonPanel.add(normalizeButton);
+        }
+
     }
 
     private void readCSVAndFilter(String csvFilePath) {
@@ -91,7 +107,11 @@ public class EMGComplete extends JFrame {
                 double[] filteredSignal2 = applyHighPassFilter(filteredSignal);
                 double[] filteredSignal3 = fullWaveRectify(filteredSignal2);
                 double[] filteredSignal4 = applyLowPassFilter(filteredSignal3);
+
                 emgData.add(filteredSignal4);
+
+                //double[] normalizedSignal = normalizeToFixedLength(timeData, filteredSignal4, 201);
+                //emgData.add(normalizedSignal);
 
             }
 
@@ -141,50 +161,110 @@ public class EMGComplete extends JFrame {
         return butterworth.bandPassFilter(signal, 4, 20, 450);
     }
 
+    //Normalizzazione
+    private double[] normalizeToFixedLength(double[] time, double[] signal, int points) {
+        // Usa solo i primi 201 punti (o meno se il segnale è più corto)
+        int length = Math.min(points, time.length);
+        double[] truncatedTime = Arrays.copyOfRange(time, 0, length);
+        double[] truncatedSignal = Arrays.copyOfRange(signal, 0, length);
 
-    // Metodo per leggere il file CSV e salvare i dati
-    private void readCSV(String csvFilePath) {
-        try (BufferedReader br = new BufferedReader(new FileReader(csvFilePath))) {
-            String line;
-            boolean isFirstLine = true; // Variabile per riconoscere la prima riga (intestazione)
+        SplineInterpolator interpolator = new SplineInterpolator();
+        PolynomialSplineFunction spline = interpolator.interpolate(truncatedTime, truncatedSignal);
 
-            List<Double> timeList = new ArrayList<>();
-            List<List<Double>> emgColumns = new ArrayList<>();
+        // Generate the uniform grid (from 0 to 100% in x points)
+        double[] normalizedTime = new double[points];
+        double minTime = truncatedTime[0];
+        double maxTime = truncatedTime[length - 1];
+        double step = (maxTime - minTime) / (points - 1);
 
-            while ((line = br.readLine()) != null) {
-                // Processa la prima riga come intestazione
-                if (isFirstLine) {
-                    isFirstLine = false;
-                    String[] headers = line.split(",");
-
-                    // Aggiungi le etichette dei segnali EMG a partire dalla terza colonna
-                    for (int i = 2; i < headers.length; i++) {
-                        emgLabels.add(headers[i].trim());
-                        emgColumns.add(new ArrayList<>()); // Crea una colonna per ogni segnale EMG
-                    }
-                    continue; // Salta alla prossima iterazione per processare i dati
-                }
-
-                String[] values = line.split(",");
-                // Parsing della colonna Time
-                timeList.add(Double.parseDouble(values[1].trim()));
-
-                // Aggiungi i valori EMG per ogni colonna
-                for (int i = 0; i < emgLabels.size(); i++) {
-                    emgColumns.get(i).add(Double.parseDouble(values[i + 2].trim()));
-                }
-            }
-
-            // Converti i dati in array
-            timeData = timeList.stream().mapToDouble(Double::doubleValue).toArray();
-            for (List<Double> column : emgColumns) {
-                emgData.add(column.stream().mapToDouble(Double::doubleValue).toArray());
-            }
-
-        } catch (IOException | NumberFormatException e) {
-            e.printStackTrace();
+        // Interpolate values of the signal onto the new grid
+        double[] normalizedSignal = new double[points];
+        for (int i = 0; i < points; i++) {
+            normalizedTime[i] = minTime + i * step;
+            normalizedSignal[i] = spline.value(normalizedTime[i]);
         }
+
+        return normalizedSignal;
     }
+
+    //plot segnale normalizzato + range
+    private void plotNormalizedWithRange(int index) {
+        // Mostra una finestra di dialogo per l'intervallo
+        String rangeInput = JOptionPane.showInputDialog(
+                this,
+                "Enter the range of points (e.g., 0-200):",
+                "Normalize Range",
+                JOptionPane.PLAIN_MESSAGE
+        );
+
+        if (rangeInput == null || !rangeInput.matches("\\d+-\\d+")) {
+            JOptionPane.showMessageDialog(this, "Invalid range format. Use 'start-end' format.");
+            return;
+        }
+
+        // Parse range
+        String[] parts = rangeInput.split("-");
+        int start = Integer.parseInt(parts[0]);
+        int end = Integer.parseInt(parts[1]);
+
+        if (start < 0 || end >= timeData.length || start >= end) {
+            JOptionPane.showMessageDialog(this, "Invalid range. Ensure 0 <= start < end < " + timeData.length);
+            return;
+        }
+
+        // Mostra una finestra di dialogo per il numero di punti
+        String pointsInput = JOptionPane.showInputDialog(
+                this,
+                "Enter the number of points for normalization:",
+                "Number of Points",
+                JOptionPane.PLAIN_MESSAGE
+        );
+
+        if (pointsInput == null || !pointsInput.matches("\\d+")) {
+            JOptionPane.showMessageDialog(this, "Invalid number format. Enter a positive integer.");
+            return;
+        }
+
+        int points = Integer.parseInt(pointsInput);
+        if (points <= 1) {
+            JOptionPane.showMessageDialog(this, "Number of points must be greater than 1.");
+            return;
+        }
+
+        // Esegui la normalizzazione
+        double[] emgSignal = emgData.get(index);
+        double[] rangeTime = Arrays.copyOfRange(timeData, start, end + 1);
+        double[] rangeSignal = Arrays.copyOfRange(emgSignal, start, end + 1);
+
+        double[] normalizedSignal = normalizeToFixedLength(rangeTime, rangeSignal, points);
+
+        // Crea un nuovo grafico in una nuova finestra
+        XYSeries series = new XYSeries(emgLabels.get(index) + " (Normalized)");
+        for (int i = 0; i < normalizedSignal.length; i++) {
+            double percentage = (i / (double) (normalizedSignal.length - 1)) * 100;
+            series.add(percentage, normalizedSignal[i]);
+        }
+
+        XYSeriesCollection dataset = new XYSeriesCollection(series);
+        JFreeChart chart = ChartFactory.createXYLineChart(
+                "Normalized EMG Signal (" + emgLabels.get(index) + ")",
+                "% Time",
+                "Amplitude",
+                dataset,
+                PlotOrientation.VERTICAL,
+                true,
+                true,
+                false
+        );
+
+        // Visualizza il grafico in una nuova finestra
+        JFrame graphFrame = new JFrame("Normalized EMG Signal - " + emgLabels.get(index));
+        graphFrame.setSize(800, 600);
+        graphFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        graphFrame.add(new ChartPanel(chart));
+        graphFrame.setVisible(true);
+    }
+
 
     // Metodo per visualizzare un grafico per un segnale EMG specifico
     private void plotEMGSignal(int index) {
@@ -208,8 +288,50 @@ public class EMGComplete extends JFrame {
         );
         //Aggiornamento in real time
         chartPanel.setChart(chart);
-        printFilteredSignal(emgSignal);
     }
+
+    //Metodo per visualizzare grafico per segnale emg filtrato + normalizzato
+    private void plotNormalizedSignal(int index) {
+        XYSeries series = new XYSeries(emgLabels.get(index));
+        double[] emgSignal = emgData.get(index);
+
+        // Normalizza l'intero segnale (numero di punti uguale alla lunghezza originale)
+        double[] normalizedSignal = normalizeToFixedLength(timeData, emgSignal, emgSignal.length);
+
+        // Usa la percentuale del tempo per l'asse x
+        for (int i = 0; i < normalizedSignal.length; i++) {
+            double percentage = (i / (double) (normalizedSignal.length - 1)) * 100;
+            series.add(percentage, normalizedSignal[i]);
+        }
+
+        // Crea un nuovo grafico in una nuova finestra
+        series = new XYSeries(emgLabels.get(index) + " (Normalized)");
+        for (int i = 0; i < normalizedSignal.length; i++) {
+            double percentage = (i / (double) (normalizedSignal.length - 1)) * 100;
+            series.add(percentage, normalizedSignal[i]);
+        }
+
+        XYSeriesCollection dataset = new XYSeriesCollection(series);
+        JFreeChart chart = ChartFactory.createXYLineChart(
+                "Normalized EMG Signal (" + emgLabels.get(index) + ")",
+                "% Time",
+                "Amplitude",
+                dataset,
+                PlotOrientation.VERTICAL,
+                true,
+                true,
+                false
+        );
+
+        // Visualizza il grafico in una nuova finestra
+        JFrame graphFrame = new JFrame("Normalized EMG Signal - " + emgLabels.get(index));
+        graphFrame.setSize(800, 600);
+        graphFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        graphFrame.add(new ChartPanel(chart));
+        graphFrame.setVisible(true);
+    }
+
+
 
     private void printFilteredSignal(double[] signal) {
         // Stampa l'intestazione della tabella
@@ -221,7 +343,6 @@ public class EMGComplete extends JFrame {
             System.out.printf("%-10d %-10.3f %-15.4f%n", i, timeData[i], signal[i]);
         }
     }
-
 
     public static void main(String[] args) {
         // Percorso del file CSV
