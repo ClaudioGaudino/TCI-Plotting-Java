@@ -27,7 +27,13 @@ public class Main {
         String inputFilePath = "data\\segnale_1_env.emt";
         String outputFilePath = "data\\ProfEMGs.csv";
 
+        //Conversione file emt to csv EMGS.CSV Segnali
+
+        String input = "data\\SegnaliEMG.emt";
+        String output = "data\\EMGs.csv";
+
         try {
+            converter.convert(input, output);
             converter.convert(inputFilePath, outputFilePath);
             System.out.println("Conversione completata. File CSV generato in: " + outputFilePath);
         } catch (IOException e) {

@@ -67,6 +67,11 @@ public class EMGComplete extends JFrame {
             JButton normalizeButton = new JButton("Normalize con range " + emgLabels.get(i));
             normalizeButton.addActionListener(e -> plotNormalizedWithRange(index));
             buttonPanel.add(normalizeButton);
+
+            // Bottone per confronto
+            JButton compareButton = new JButton("Compare " + emgLabels.get(i));
+            compareButton.addActionListener(e -> plotComparison(index));
+            buttonPanel.add(compareButton);
         }
 
     }
@@ -163,7 +168,6 @@ public class EMGComplete extends JFrame {
 
     //Normalizzazione
     private double[] normalizeToFixedLength(double[] time, double[] signal, int points) {
-        // Usa solo i primi 201 punti (o meno se il segnale è più corto)
         int length = Math.min(points, time.length);
         double[] truncatedTime = Arrays.copyOfRange(time, 0, length);
         double[] truncatedSignal = Arrays.copyOfRange(signal, 0, length);
@@ -263,6 +267,7 @@ public class EMGComplete extends JFrame {
         graphFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         graphFrame.add(new ChartPanel(chart));
         graphFrame.setVisible(true);
+
     }
 
 
@@ -332,6 +337,71 @@ public class EMGComplete extends JFrame {
     }
 
 
+    private void plotComparison(int index) {
+        // Mostra una finestra di dialogo per l'intervallo
+        String rangeInput = JOptionPane.showInputDialog(
+                this,
+                "Enter the range of points for normalization (e.g., 0-200):",
+                "Select Range for Comparison",
+                JOptionPane.PLAIN_MESSAGE
+        );
+
+        if (rangeInput == null || !rangeInput.matches("\\d+-\\d+")) {
+            JOptionPane.showMessageDialog(this, "Invalid range format. Use 'start-end' format.");
+            return;
+        }
+
+        // Parse range
+        String[] parts = rangeInput.split("-");
+        int start = Integer.parseInt(parts[0]);
+        int end = Integer.parseInt(parts[1]);
+
+        if (start < 0 || end >= timeData.length || start >= end) {
+            JOptionPane.showMessageDialog(this, "Invalid range. Ensure 0 <= start < end < " + timeData.length);
+            return;
+        }
+
+        // Segnali da plottare
+        double[] emgSignal = emgData.get(index);
+        double[] rangeTime = Arrays.copyOfRange(timeData, start, end + 1);
+        double[] rangeSignal = Arrays.copyOfRange(emgSignal, start, end + 1);
+        double[] normalizedSignal = normalizeToFixedLength(rangeTime, rangeSignal, rangeSignal.length);
+
+        // Crea il dataset per il confronto
+        XYSeries originalSeries = new XYSeries("Original Signal");
+        for (int i = start; i <= end; i++) {
+            originalSeries.add(timeData[i], emgSignal[i]);
+        }
+
+        XYSeries normalizedSeries = new XYSeries("Normalized Signal");
+        for (int i = 0; i < normalizedSignal.length; i++) {
+            normalizedSeries.add(rangeTime[0] + i * (rangeTime[rangeTime.length - 1] - rangeTime[0]) / (normalizedSignal.length - 1), normalizedSignal[i]);
+        }
+
+        XYSeriesCollection dataset = new XYSeriesCollection();
+        dataset.addSeries(originalSeries);
+        dataset.addSeries(normalizedSeries);
+
+        // Crea il grafico
+        JFreeChart chart = ChartFactory.createXYLineChart(
+                "Comparison of Original and Normalized Signals - " + emgLabels.get(index),
+                "Time",
+                "Amplitude",
+                dataset,
+                PlotOrientation.VERTICAL,
+                true,
+                true,
+                false
+        );
+
+        // Visualizza il grafico in una nuova finestra
+        JFrame graphFrame = new JFrame("Comparison - " + emgLabels.get(index));
+        graphFrame.setSize(800, 600);
+        graphFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        graphFrame.add(new ChartPanel(chart));
+        graphFrame.setVisible(true);
+    }
+
 
     private void printFilteredSignal(double[] signal) {
         // Stampa l'intestazione della tabella
@@ -348,6 +418,7 @@ public class EMGComplete extends JFrame {
         // Percorso del file CSV
         String csvFilePath = "data\\EMGs.csv";
         SwingUtilities.invokeLater(() -> new EMGComplete(csvFilePath).setVisible(true));
+
     }
 }
 
