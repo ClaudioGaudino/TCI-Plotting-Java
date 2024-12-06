@@ -2,8 +2,6 @@ import com.github.psambit9791.jdsp.filter.Butterworth;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 
-import javax.swing.*;
-
 public class Main {
     public static void main(String[] args) {
         String path = "data\\accelerazione.csv";
@@ -32,6 +30,7 @@ public class Main {
                 "GSensor.X", "GSensor.Y", "GSensor.Z",
                 "Frame",
                 "", "", "",
+                false,false,
                 true,
                 false,
                 false,
@@ -47,6 +46,7 @@ public class Main {
                 "GSensor.X", "GSensor.Y", "GSensor.Z",
                 "Frame",
                 "", "", "",
+                false,false,
                 true,
                 false,
                 false,
@@ -62,8 +62,9 @@ public class Main {
                 "GSensor.X", "GSensor.Y", "GSensor.Z",
                 "Frame",
                 "", "", "",
+                true,false,
                 true,
-                true, true, true
+                false, false, true
         );
 
         try {
@@ -76,6 +77,12 @@ public class Main {
                 data.makeFree();
             if (filtered) {
                 Butterworth b = new Butterworth(100);
+                if (config.isUseAccMagnitude()) {
+                    data.filter(Data.Axis.MAGNITUDE, Data.Type.ACCELERATION, b, 4, 10);
+                }
+                if (config.isUseAngVelMagnitude()) {
+                    data.filter(Data.Axis.MAGNITUDE, Data.Type.ANG_VELOCITY, b, 4, 10);
+                }
 
                 if (config.isPlotX()) {
                     data.filter(Data.Axis.X, Data.Type.ACCELERATION, b, 4, 10);
@@ -91,11 +98,12 @@ public class Main {
                 }
             }
 
+            System.out.println(data.getAccMagnitude().get(1580));
+
             XYSeriesCollection[] dataset = data.getDataset(config);
 
             dataset[0].addSeries(constant("-G", dataset[0].getItemCount(0), -9.80665));
             dataset[0].addSeries(constant("+G", dataset[0].getItemCount(0), 9.80665));
-            //dataset[1].addSeries(constant("-G", dataset[1].getItemCount(0), -9.80665));
 
             AccelerometerPlot p = new AccelerometerPlot(dataset[0], dataset[1]);
         } catch (Exception e) {

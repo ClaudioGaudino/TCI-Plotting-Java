@@ -10,7 +10,7 @@ import java.util.stream.Collectors;
 
 public class Data {
     public enum Axis {
-        X, Y, Z
+        X, Y, Z, MAGNITUDE
     }
     public enum Type {
         ACCELERATION, ANG_VELOCITY
@@ -38,6 +38,9 @@ public class Data {
     private List<Double> freeAngVelX;
     private List<Double> freeAngVelY;
     private List<Double> freeAngVelZ;
+
+    private List<Double> accMagnitude;
+    private List<Double> angVelMagnitude;
 
     public Data(List<Double> accX, List<Double> accY, List<Double> accZ,
                 List<Double> angX, List<Double> angY, List<Double> angZ,
@@ -104,6 +107,18 @@ public class Data {
                     }
                 }
             }
+            case MAGNITUDE -> {
+                switch (type) {
+                    case ACCELERATION -> {
+                        getAccMagnitude();
+                        accMagnitude = lowPassFilter(accMagnitude, b, order, cutoffFreq);
+                    }
+                    case ANG_VELOCITY -> {
+                        getAngVelMagnitude();
+                        angVelMagnitude = lowPassFilter(angVelMagnitude, b, order, cutoffFreq);
+                    }
+                }
+            }
         }
     }
 
@@ -157,57 +172,101 @@ public class Data {
     }
 
     public XYSeriesCollection[] getDataset(Config config) {
-        XYSeries accXSeries = new XYSeries("X Acceleration");
-        XYSeries accYSeries = new XYSeries("Y Acceleration");
-        XYSeries accZSeries = new XYSeries("Z Acceleration");
-
-        XYSeries angVelXSeries = new XYSeries("X Angular Velocity");
-        XYSeries angVelYSeries = new XYSeries("Y Angular Velocity");
-        XYSeries angVelZSeries = new XYSeries("Z Angular Velocity");
-
-        List<Double> localAccX = config.isFree() ? this.freeAccX : this.accX;
-        List<Double> localAccY = config.isFree() ? this.freeAccY : this.accY;
-        List<Double> localAccZ = config.isFree() ? this.freeAccZ : this.accZ;
-
-        List<Double> localAngVelX = config.isFree() ? this.freeAngVelX : this.angVelX;
-        List<Double> localAngVelY = config.isFree() ? this.freeAngVelY : this.angVelY;
-        List<Double> localAngVelZ = config.isFree() ? this.freeAngVelZ : this.angVelZ;
-
-        for (int frame = 0; frame < size; frame++) {
-            if (config.isPlotX()) {
-                if (config.isFree()) {
-                    accXSeries.add(frame, freeAccX.get(frame));
-                    angVelXSeries.add(frame, freeAngVelX.get(frame));
-                } else {
-                    accXSeries.add(frame, accX.get(frame));
-                    angVelXSeries.add(frame, angVelX.get(frame));
-                }
-
-            }
-            if (config.isPlotY()) {
-                accYSeries.add(frame, localAccY.get(frame));
-                angVelYSeries.add(frame, localAngVelY.get(frame));
-            }
-            if (config.isPlotZ()) {
-                accZSeries.add(frame, localAccZ.get(frame));
-                angVelZSeries.add(frame, localAngVelZ.get(frame));
-            }
-        }
-
         XYSeriesCollection datasetAcc = new XYSeriesCollection();
         XYSeriesCollection datasetAngVel = new XYSeriesCollection();
 
-        if (config.isPlotX()) {
-            datasetAcc.addSeries(accXSeries);
-            datasetAngVel.addSeries(angVelXSeries);
+        if (config.isUseAccMagnitude()) {
+            XYSeries accMagnitudeSeries = new XYSeries("Acceleration (Magnitude)");
+
+            getAccMagnitude();
+
+            for (int frame = 0; frame < size; frame++)
+                accMagnitudeSeries.add(frame, accMagnitude.get(frame));
+
+            datasetAcc.addSeries(accMagnitudeSeries);
         }
-        if (config.isPlotY()) {
-            datasetAcc.addSeries(accYSeries);
-            datasetAngVel.addSeries(angVelYSeries);
+        else {
+            XYSeries accXSeries = new XYSeries("X Acceleration");
+            XYSeries accYSeries = new XYSeries("Y Acceleration");
+            XYSeries accZSeries = new XYSeries("Z Acceleration");
+
+            List<Double> localAccX = config.isFree() ? this.freeAccX : this.accX;
+            List<Double> localAccY = config.isFree() ? this.freeAccY : this.accY;
+            List<Double> localAccZ = config.isFree() ? this.freeAccZ : this.accZ;
+
+            for (int frame = 0; frame < size; frame++) {
+                if (config.isPlotX()) {
+                    if (config.isFree()) {
+                        accXSeries.add(frame, localAccX.get(frame));
+                    } else {
+                        accXSeries.add(frame, localAccX.get(frame));
+                    }
+
+                }
+                if (config.isPlotY()) {
+                    accYSeries.add(frame, localAccY.get(frame));
+                }
+                if (config.isPlotZ()) {
+                    accZSeries.add(frame, localAccZ.get(frame));
+                }
+            }
+
+            if (config.isPlotX()) {
+                datasetAcc.addSeries(accXSeries);
+            }
+            if (config.isPlotY()) {
+                datasetAcc.addSeries(accYSeries);
+            }
+            if (config.isPlotZ()) {
+                datasetAcc.addSeries(accZSeries);
+            }
         }
-        if (config.isPlotZ()) {
-            datasetAcc.addSeries(accZSeries);
-            datasetAngVel.addSeries(angVelZSeries);
+
+        if (config.isUseAngVelMagnitude()) {
+            XYSeries angVelMagnitudeSeries = new XYSeries("Angular Velocity (Magnitude)");
+
+            getAngVelMagnitude();
+
+            for (int frame = 0; frame < size; frame++)
+                angVelMagnitudeSeries.add(frame, angVelMagnitude.get(frame));
+
+            datasetAngVel.addSeries(angVelMagnitudeSeries);
+        }
+        else {
+            XYSeries angVelXSeries = new XYSeries("X Angular Velocity");
+            XYSeries angVelYSeries = new XYSeries("Y Angular Velocity");
+            XYSeries angVelZSeries = new XYSeries("Z Angular Velocity");
+
+            List<Double> localAngVelX = config.isFree() ? this.freeAngVelX : this.angVelX;
+            List<Double> localAngVelY = config.isFree() ? this.freeAngVelY : this.angVelY;
+            List<Double> localAngVelZ = config.isFree() ? this.freeAngVelZ : this.angVelZ;
+
+            for (int frame = 0; frame < size; frame++) {
+                if (config.isPlotX()) {
+                    if (config.isFree()) {
+                        angVelXSeries.add(frame, localAngVelX.get(frame));
+                    } else {
+                        angVelXSeries.add(frame, localAngVelZ.get(frame));
+                    }
+
+                }
+                if (config.isPlotY()) {
+                    angVelYSeries.add(frame, localAngVelY.get(frame));
+                }
+                if (config.isPlotZ()) {
+                    angVelZSeries.add(frame, localAngVelZ.get(frame));
+                }
+            }
+
+            if (config.isPlotX()) {
+                datasetAngVel.addSeries(angVelXSeries);
+            }
+            if (config.isPlotY()) {
+                datasetAngVel.addSeries(angVelYSeries);
+            }
+            if (config.isPlotZ()) {
+                datasetAngVel.addSeries(angVelZSeries);
+            }
         }
 
         return new XYSeriesCollection[]{datasetAcc, datasetAngVel};
@@ -275,5 +334,31 @@ public class Data {
 
     public List<Double> getFreeAngVelZ() {
         return freeAngVelZ;
+    }
+
+    public List<Double> getAccMagnitude() {
+        if (accMagnitude == null)
+            accMagnitude = calculateMagnitude(accX, accY, accZ, true);
+
+        return accMagnitude;
+    }
+
+    public List<Double> getAngVelMagnitude() {
+        if (angVelMagnitude == null)
+            angVelMagnitude = calculateMagnitude(angVelX, angVelY, angVelZ, false);
+
+        return angVelMagnitude;
+    }
+
+    private List<Double> calculateMagnitude(List<Double> x, List<Double> y, List<Double> z, boolean removeG) {
+        List<Double> mag = new ArrayList<>();
+        double tmp;
+
+        for (int i = 0; i < size; i++) {
+            tmp = Math.sqrt(Math.pow(x.get(i), 2) + Math.pow(y.get(i), 2) + Math.pow(z.get(i), 2)) - (removeG ? G : 0);
+            mag.add(tmp);
+        }
+
+        return mag;
     }
 }

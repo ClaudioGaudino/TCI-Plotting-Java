@@ -29,7 +29,8 @@ public class AccelerometerPlot extends JFrame {
         CrosshairListener listener = new CrosshairListener();
 
 
-        XYSeries[] accContacts = EventIdentifier.getContactEvents(datasetAcc.getSeries(0), datasetAngVel.getSeries(0), true);
+        //XYSeries[] accContacts = EventIdentifier.getContactEvents(datasetAcc.getSeries(0), datasetAngVel.getSeries(0), true);
+        XYSeries[] accContacts = EventIdentifier.getContactEvents(datasetAcc.getSeries(0), 3, 0.2, 8);
         XYSeriesCollection accContactsCollection = new XYSeriesCollection();
         for (XYSeries series : accContacts) {
             accContactsCollection.addSeries(series);
@@ -45,7 +46,7 @@ public class AccelerometerPlot extends JFrame {
 
         plotSetup(xyPlotAngVel, angContactsCollection, datasetAngVel);
 
-        JButton saveButton = new JButton("Salva " + (accContacts[0].getItemCount() + accContacts[1].getItemCount()) + " Eventi");
+        JButton saveButton = new JButton("Salva " + "(accContacts[0].getItemCount() + accContacts[1].getItemCount())" + " Eventi");
 
         //plotSetup(xyPlotAcc, listener.selectedPoints, datasetAcc);
         //plotSetup(xyPlotAngVel, listener.selectedPoints, datasetAngVel);

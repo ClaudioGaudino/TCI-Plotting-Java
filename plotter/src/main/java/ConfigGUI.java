@@ -97,7 +97,7 @@ public class ConfigGUI extends JFrame {
                         angVelXColField.getText(), angVelYColField.getText(), angVelZColField.getText(),
                         indexColField.getText(),
                         "","","",
-                        freeCheckBox.isSelected(),
+                        false, false, freeCheckBox.isSelected(),
                         plotXCheckBox.isSelected(),
                         plotYCheckBox.isSelected(),
                         plotZCheckBox.isSelected()

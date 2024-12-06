@@ -25,13 +25,16 @@ public class Config {
     private final String angIndexCol;
     private final String angVelIndexCol;
 
+    private final boolean useAccMagnitude;
+    private final boolean useAngVelMagnitude;
+
     private final boolean free;
 
     private final boolean plotX;
     private final boolean plotY;
     private final boolean plotZ;
 
-    public Config(boolean multifile, String filePath, String accelerationFilePath, String anglesFilePath, String angularVelocityFilePath, String accColX, String accColY, String accColZ, String angColX, String angColY, String angColZ, String angVelColX, String angVelColY, String angVelColZ, String indexCol, String accIndexCol, String angIndexCol, String angVelIndexCol, boolean free, boolean plotX, boolean plotY, boolean plotZ) {
+    public Config(boolean multifile, String filePath, String accelerationFilePath, String anglesFilePath, String angularVelocityFilePath, String accColX, String accColY, String accColZ, String angColX, String angColY, String angColZ, String angVelColX, String angVelColY, String angVelColZ, String indexCol, String accIndexCol, String angIndexCol, String angVelIndexCol, boolean useAccMagnitude, boolean useAngVelMagnitude, boolean free, boolean plotX, boolean plotY, boolean plotZ) {
         this.multifile = multifile;
         this.filePath = filePath;
         this.accelerationFilePath = accelerationFilePath;
@@ -50,6 +53,8 @@ public class Config {
         this.accIndexCol = accIndexCol;
         this.angIndexCol = angIndexCol;
         this.angVelIndexCol = angVelIndexCol;
+        this.useAccMagnitude = useAccMagnitude;
+        this.useAngVelMagnitude = useAngVelMagnitude;
         this.free = free;
         this.plotX = plotX;
         this.plotY = plotY;
@@ -126,6 +131,13 @@ public class Config {
 
     public String getAngVelIndexCol() {
         return angVelIndexCol;
+    }
+
+    public boolean isUseAccMagnitude() {
+        return useAccMagnitude;
+    }
+    public boolean isUseAngVelMagnitude() {
+        return useAngVelMagnitude;
     }
 
     public boolean isFree() {
