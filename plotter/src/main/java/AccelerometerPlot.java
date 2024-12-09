@@ -30,7 +30,8 @@ public class AccelerometerPlot extends JFrame {
 
 
         //XYSeries[] accContacts = EventIdentifier.getContactEvents(datasetAcc.getSeries(0), datasetAngVel.getSeries(0), true);
-        XYSeries[] accContacts = EventIdentifier.getContactEvents(datasetAcc.getSeries(0), 3, 0.2, 8);
+        //XYSeries[] accContacts = EventIdentifier.getContactEvents(datasetAcc.getSeries(0), 3, 0.2, 8);
+        XYSeries[] accContacts = EventIdentifier.getContactEvents(datasetAcc.getSeries(0), datasetAngVel.getSeries(0), true, 9, 1, 20);
         XYSeriesCollection accContactsCollection = new XYSeriesCollection();
         for (XYSeries series : accContacts) {
             accContactsCollection.addSeries(series);
@@ -38,7 +39,8 @@ public class AccelerometerPlot extends JFrame {
 
         plotSetup(xyPlotAcc, accContactsCollection, datasetAcc);
 
-        XYSeries[] angContacts = EventIdentifier.getContactEvents(datasetAcc.getSeries(0), datasetAngVel.getSeries(0), false);
+        //XYSeries[] angContacts = EventIdentifier.getContactEvents(datasetAcc.getSeries(0), datasetAngVel.getSeries(0), false);
+        XYSeries[] angContacts = EventIdentifier.getContactEvents(datasetAcc.getSeries(0), datasetAngVel.getSeries(0), false, 9, 1, 20);
         XYSeriesCollection angContactsCollection = new XYSeriesCollection();
         for (XYSeries series : angContacts) {
             angContactsCollection.addSeries(series);

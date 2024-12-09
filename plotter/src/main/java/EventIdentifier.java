@@ -81,20 +81,65 @@ public class EventIdentifier {
         return new XYSeries[]{contactsRight, contactsLeft, rightDebug, leftDebug};
     }
 
-    /* peakIndices <- an empty array
-    processedSignal <- signal[0 : lag]
+    /*Naive implementation*/
+    public static XYSeries[] getContactEvents(XYSeries accSeries, XYSeries angSeries, boolean doAcc, double threshold, int window, int min_time) {
+        if (accSeries.getItemCount() != angSeries.getItemCount() || window < 1 || min_time < 1)
+            throw new IllegalArgumentException("Invalid params");
 
-    for index <- lag to length(signal):
-        y <- signal[index]
-        avg <- average(processedSignal[(index-lag) : index])
-        sd <- stdev(processedSignal[(index-lag) : index])
-        if y - avg > sd * threshold:
-            peakIndices.push(index)
-            adjustedValue <- (influence * y) + ((1 - influence) * processedSignal[index - 1])
-        else:
-            processedSignal.push(y)
+        XYSeries leftContacts = new XYSeries("Left Contacts");
+        XYSeries rightContacts = new XYSeries("Right Contacts");
+        XYSeries otherContacts = new XYSeries("Weird Contacts");
+        XYSeries debug = new XYSeries("Debug");
+        double[] accValues = new double[accSeries.getItemCount()];
+        double[] angValues = new double[angSeries.getItemCount()];
 
-    return peakIndices*/
+        for (int i = 0; i < accValues.length; i++) {
+            accValues[i] = (double) accSeries.getY(i);
+            angValues[i] = (double) angSeries.getY(i);
+        }
+
+        boolean peak_found;
+
+        for (int i = window; i < accValues.length - window; i++) {
+            if (accValues[i] < threshold) continue;
+
+            peak_found = true;
+            for (int j = i - window; j <= i + window; j++) {
+                if (i == j) continue;
+
+                if (accValues[i] < accValues[j]) {
+                    peak_found = false;
+                    break;
+                }
+            }
+
+            if (peak_found) {
+                //check angular velocity direction
+                if (angValues[i] >= angValues[i - 1] && angValues[i] <= angValues[i + 1]) {
+                //if (angValues[i] > 0) {
+                    //angular velocity rising -> right step
+                    rightContacts.add(i, doAcc ? accValues[i] : angValues[i]);
+                }
+                else if (angValues[i] < angValues[i - 1] && angValues[i] > angValues [i + 1]) {
+                //else if (angValues[i] < 0) {
+                    //angular velocity falling -> left step
+                    leftContacts.add(i, doAcc ? accValues[i] : angValues[i]);
+                }
+                else {
+                    //angular velocity is in a local maxima/minima -> side unsure
+                    otherContacts.add(i, doAcc ? accValues[i] : angValues[i]);
+                }
+
+                i += min_time - 1;
+            }
+        }
+
+        return new XYSeries[]{leftContacts, rightContacts, otherContacts, debug};
+    }
+
+    /*Complicated ass implementation
+    * Taken from https://stackoverflow.com/questions/22583391/peak-signal-detection-in-realtime-timeseries-data/56174275#56174275
+    * */
     public static XYSeries[] getContactEvents(XYSeries series, int lag, double peakInfluence, double threshold) {
         XYSeries contacts = new XYSeries("Peaks");
         List<Double> data = new ArrayList<>();
