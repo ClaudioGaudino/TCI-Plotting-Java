@@ -67,16 +67,58 @@ public class Main {
                 false, false, true
         );
 
+        Config marco1 = new Config(
+                false,
+                "data\\marco\\1.csv",
+                "","","",
+                "Acc_X", "Acc_Y", "Acc_Z",
+                "Euler_X", "Euler_Y", "Euler_Z",
+                "Gyr_X", "Gyr_Y", "Gyr_Z",
+                "PacketCounter",
+                "", "", "",
+                true, false,
+                true,
+                false, false, true
+        );
+
+        Config marco2 = new Config(
+                false,
+                "data\\marco\\2.csv",
+                "","","",
+                "Acc_X", "Acc_Y", "Acc_Z",
+                "Euler_X", "Euler_Y", "Euler_Z",
+                "Gyr_X", "Gyr_Y", "Gyr_Z",
+                "PacketCounter",
+                "", "", "",
+                true, false,
+                true,
+                false, false, true
+        );
+
+        Config marco3 = new Config(
+                false,
+                "data\\marco\\3.csv",
+                "","","",
+                "Acc_X", "Acc_Y", "Acc_Z",
+                "Euler_X", "Euler_Y", "Euler_Z",
+                "Gyr_X", "Gyr_Y", "Gyr_Z",
+                "PacketCounter",
+                "", "", "",
+                true, false,
+                true,
+                false, false, true
+        );
+
         try {
             //ConfigGUI gui = new ConfigGUI();
-            Config config = config3;
+            Config config = marco3;
             boolean filtered = true;
             Data data = CSVInterpeter.read_dataset(config, true);
 
             if (config.isFree())
                 data.makeFree();
             if (filtered) {
-                Butterworth b = new Butterworth(100);
+                Butterworth b = new Butterworth(60);
                 if (config.isUseAccMagnitude()) {
                     data.filter(Data.Axis.MAGNITUDE, Data.Type.ACCELERATION, b, 4, 10);
                 }
@@ -98,7 +140,7 @@ public class Main {
                 }
             }
 
-            System.out.println(data.getAccMagnitude().get(1580));
+            //System.out.println(data.getAccMagnitude().get(1580));
 
             XYSeriesCollection[] dataset = data.getDataset(config);
 
