@@ -90,6 +90,7 @@ public class EventIdentifier {
         if (accSeries.getItemCount() != angSeries.getItemCount() || window < 1 || min_time < 1)
             throw new IllegalArgumentException("Invalid params");
 
+        //TODO: set it up such that if a second, stronger peak/valley is found at most x after the last, then the last peak/valley is replaced by the new one (attempts to remove pre-peaks nsht)
         XYSeries leftContacts = new XYSeries("Left Contacts");
         XYSeries rightContacts = new XYSeries("Right Contacts");
         XYSeries otherContacts = new XYSeries("Other Contacts");
