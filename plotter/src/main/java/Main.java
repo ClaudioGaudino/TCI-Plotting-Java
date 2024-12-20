@@ -111,7 +111,7 @@ public class Main {
 
         try {
             //ConfigGUI gui = new ConfigGUI();
-            Config config = marco3;
+            Config config = marco2;
             boolean filtered = true;
             Data data = CSVInterpeter.read_dataset(config, true);
 
@@ -144,8 +144,8 @@ public class Main {
 
             XYSeriesCollection[] dataset = data.getDataset(config);
 
-            dataset[0].addSeries(constant("-G", dataset[0].getItemCount(0), -9.80665));
-            dataset[0].addSeries(constant("+G", dataset[0].getItemCount(0), 9.80665));
+            //dataset[0].addSeries(constant("-G", dataset[0].getItemCount(0), -9.80665));
+            //dataset[0].addSeries(constant("+G", dataset[0].getItemCount(0), 9.80665));
 
             AccelerometerPlot p = new AccelerometerPlot(dataset[0], dataset[1]);
         } catch (Exception e) {

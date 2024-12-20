@@ -9,6 +9,10 @@ import java.util.HashMap;
 import java.util.List;
 
 public class EventIdentifier {
+
+    private enum StepSide {
+        LEFT, RIGHT, UNKNOWN
+    }
     private static final double G = 9.80665 - 0.5;
 
     /*
@@ -82,14 +86,16 @@ public class EventIdentifier {
     }
 
     /*Naive implementation*/
-    public static XYSeries[] getContactEvents(XYSeries accSeries, XYSeries angSeries, boolean doAcc, double threshold, int window, int min_time) {
+    public static XYSeries[] getContactEvents(XYSeries accSeries, XYSeries angSeries, boolean doAcc, double peakThreshold, double valleyThreshold, int window, int min_time) {
         if (accSeries.getItemCount() != angSeries.getItemCount() || window < 1 || min_time < 1)
             throw new IllegalArgumentException("Invalid params");
 
         XYSeries leftContacts = new XYSeries("Left Contacts");
         XYSeries rightContacts = new XYSeries("Right Contacts");
-        XYSeries otherContacts = new XYSeries("Weird Contacts");
-        XYSeries debug = new XYSeries("Debug");
+        XYSeries otherContacts = new XYSeries("Other Contacts");
+        XYSeries leftLifts = new XYSeries("Left Lifts");
+        XYSeries rightLifts = new XYSeries("Right Lifts");
+        XYSeries otherLifts = new XYSeries("Other Lifts");
         double[] accValues = new double[accSeries.getItemCount()];
         double[] angValues = new double[angSeries.getItemCount()];
 
@@ -98,44 +104,79 @@ public class EventIdentifier {
             angValues[i] = (double) angSeries.getY(i);
         }
 
-        boolean peak_found;
+        boolean peak_found, valley_found;
+        StepSide lastStep = StepSide.UNKNOWN;
+        int lastPeak = 0, lastValley = 0;
 
         for (int i = window; i < accValues.length - window; i++) {
-            if (accValues[i] < threshold) continue;
+            if (accValues[i] >= peakThreshold && i - lastPeak >= min_time) {
+                peak_found = true;
+                for (int j = i - window; j <= i + window; j++) {
+                    if (i == j) continue;
 
-            peak_found = true;
-            for (int j = i - window; j <= i + window; j++) {
-                if (i == j) continue;
-
-                if (accValues[i] < accValues[j]) {
-                    peak_found = false;
-                    break;
+                    if (accValues[i] < accValues[j]) {
+                        peak_found = false;
+                        break;
+                    }
                 }
             }
+            else peak_found = false;
 
+            if (accValues[i] <= valleyThreshold && i - lastValley >= min_time) {
+                valley_found = true;
+                for (int j = i - window; j <= i + window; j++) {
+                    if (i == j) continue;
+
+                    if (accValues[i] > accValues[j]) {
+                        valley_found = false;
+                        break;
+                    }
+                }
+            }
+            else valley_found = false;
+
+            double value = doAcc ? accValues[i] : angValues[i];
             if (peak_found) {
+                lastPeak = i;
                 //check angular velocity direction
                 if (angValues[i] >= angValues[i - 1] && angValues[i] <= angValues[i + 1]) {
                 //if (angValues[i] > 0) {
                     //angular velocity rising -> right step
-                    rightContacts.add(i, doAcc ? accValues[i] : angValues[i]);
+                    rightContacts.add(i, value);
+                    lastStep = StepSide.RIGHT;
                 }
                 else if (angValues[i] < angValues[i - 1] && angValues[i] > angValues [i + 1]) {
                 //else if (angValues[i] < 0) {
                     //angular velocity falling -> left step
-                    leftContacts.add(i, doAcc ? accValues[i] : angValues[i]);
+                    leftContacts.add(i, value);
+                    lastStep = StepSide.LEFT;
                 }
                 else {
                     //angular velocity is in a local maxima/minima -> side unsure
-                    otherContacts.add(i, doAcc ? accValues[i] : angValues[i]);
+                    otherContacts.add(i, value);
+                    lastStep = StepSide.UNKNOWN;
                 }
+            }
 
-                i += min_time - 1;
+            if (valley_found) {
+                lastValley = i;
+                switch (lastStep) {
+                    case LEFT:
+                        leftLifts.add(i, value);
+                        break;
+                    case RIGHT:
+                        rightLifts.add(i, value);
+                        break;
+                    case UNKNOWN:
+                        otherLifts.add(i, value);
+                        break;
+                }
             }
         }
 
-        return new XYSeries[]{leftContacts, rightContacts, otherContacts, debug};
+        return new XYSeries[]{leftContacts, rightContacts, otherContacts, leftLifts, rightLifts, otherLifts};
     }
+
 
     /*Complicated ass implementation
     * Taken from https://stackoverflow.com/questions/22583391/peak-signal-detection-in-realtime-timeseries-data/56174275#56174275
