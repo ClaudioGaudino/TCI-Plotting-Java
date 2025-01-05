@@ -194,7 +194,7 @@ public class EventIdentifier {
                 //check angular velocity direction
                 if (angValues[peakI] >= angValues[peakI - 1] && angValues[peakI] <= angValues[peakI + 1]) {
                     //angular velocity rising -> right step
-                    rightContacts.add(i, value);
+                    rightContacts.add(peakI, value);
                     lastStep = StepSide.RIGHT;
                 }
                 else if (angValues[peakI] < angValues[peakI - 1] && angValues[peakI] > angValues [peakI + 1]) {
