@@ -20,7 +20,7 @@ public class EventIdentifier {
     Il contatto è destro se la velocità angolare è in salita
     Il contatto è sinistro se la veloticà angolare è in discesa
      */
-    public static XYSeries[] getContactEvents(XYSeries accSeries, XYSeries angVelSeries, boolean doAcc) throws IllegalArgumentException {
+    public static XYSeries[] getContactEventsInitial(XYSeries accSeries, XYSeries angVelSeries, boolean doAcc) throws IllegalArgumentException {
         if (accSeries.getItemCount() != angVelSeries.getItemCount())
             throw new IllegalArgumentException("AccSeries and AngVelSeries have different sizes.");
 
@@ -85,12 +85,54 @@ public class EventIdentifier {
         return new XYSeries[]{contactsRight, contactsLeft, rightDebug, leftDebug};
     }
 
-    /*Naive implementation*/
-    public static XYSeries[] getContactEvents(XYSeries accSeries, XYSeries angSeries, boolean doAcc, double peakThreshold, double valleyThreshold, int window, int min_time) {
-        if (accSeries.getItemCount() != angSeries.getItemCount() || window < 1 || min_time < 1)
+    /**
+     * Finds the foot contact and foot lift events throughout a measurement of acceleration and angular velocity.
+     * A contact event is identified by a peak (local maxima) in the acceleration values, while a lift event by a valley (local minima).
+     * The algorithm is able to discern between right and left foot contacts based off of the corresponding trend in the angular velocity: rising means right contact, falling means left.
+     * The side of a foot lift event is always assumed to be the same as the last contact's side.
+     * In the case that a contact is identified in an instant where the angular velocity is in a local minima/maxima, the side cannot be clearly identified and will be set as unknown.
+     * Uses default values for all other parameters.
+     * @param accSeries
+     * @param angSeries
+     * @param doAcc
+     * @return an array of series containing (in order):
+     *  0 - the left contacts
+     *  1 - the right contacts
+     *  2 - the unknown side contacts
+     *  3 - the left lifts
+     *  4 - the right lifts
+     *  5 - the unknown side lifts
+     */
+    public static XYSeries[] getContactEvents(XYSeries accSeries, XYSeries angSeries, boolean doAcc) {
+        return getContactEvents(accSeries, angSeries, doAcc, 9, 0.5, 1, 12, 5);
+    }
+
+    /**
+     * Finds the foot contact and foot lift events throughout a measurement of acceleration and angular velocity.
+     * A contact event is identified by a peak (local maxima) in the acceleration values, while a lift event by a valley (local minima).
+     * The algorithm is able to discern between right and left foot contacts based off of the corresponding trend in the angular velocity: rising means right contact, falling means left.
+     * The side of a foot lift event is always assumed to be the same as the last contact's side.
+     * In the case that a contact is identified in an instant where the angular velocity is in a local minima/maxima, the side cannot be clearly identified and will be set as unknown.
+     * @param accSeries a series containing pairs (frame, value) representing the acceleration measurement (works best on acceleration magnitude)
+     * @param angSeries a series containing pairs (frame, value) representing the angular velocity measurement along the Z axis after rotating the sensor frame of reference to the local one.
+     * @param doAcc wether the returned values have to be acceleration (true) or angular velocity (false), only used for plotting.
+     * @param peakThreshold the acceleration value that a peak must surpass in order to be treated as such.
+     * @param valleyThreshold the acceleration value that a valley must surpass in order to be treated as such.
+     * @param window the amount of measurements that must be lower that the currently analyzed one in order for it to be considered a peak.
+     * @param min_time the minimum amount of measurements that must be between two peaks and two valleys (a peak will only halt peak findings and vice versa for valleys)
+     * @param replaceWindow the amount of measurements to check ahead for stronger peaks/valleys in order to avoid small peaks/valleys caused by noise from blocking the actual peaks/valleys to be detected.
+     * @return an array of series containing (in order):
+     *  0 - the left contacts
+     *  1 - the right contacts
+     *  2 - the unknown side contacts
+     *  3 - the left lifts
+     *  4 - the right lifts
+     *  5 - the unknown side lifts
+     */
+    public static XYSeries[] getContactEvents(XYSeries accSeries, XYSeries angSeries, boolean doAcc, double peakThreshold, double valleyThreshold, int window, int min_time, int replaceWindow) {
+        if (accSeries.getItemCount() != angSeries.getItemCount() || window < 1 || min_time < 1 || replaceWindow < 0)
             throw new IllegalArgumentException("Invalid params");
 
-        //TODO: set it up such that if a second, stronger peak/valley is found at most x after the last, then the last peak/valley is replaced by the new one (attempts to remove pre-peaks nsht)
         XYSeries leftContacts = new XYSeries("Left Contacts");
         XYSeries rightContacts = new XYSeries("Right Contacts");
         XYSeries otherContacts = new XYSeries("Other Contacts");
@@ -136,40 +178,59 @@ public class EventIdentifier {
             }
             else valley_found = false;
 
-            double value = doAcc ? accValues[i] : angValues[i];
+
             if (peak_found) {
-                lastPeak = i;
+                double value;
+                int peakI = i;
+
+                for (int j = i + 1; j <= i + replaceWindow && j < accValues.length; j++) {
+                    if (accValues[peakI] < accValues[j]) {
+                        peakI = j;
+                    }
+                }
+                value = doAcc ? accValues[peakI] : angValues[peakI];
+                lastPeak = peakI;
+
                 //check angular velocity direction
-                if (angValues[i] >= angValues[i - 1] && angValues[i] <= angValues[i + 1]) {
-                //if (angValues[i] > 0) {
+                if (angValues[peakI] >= angValues[peakI - 1] && angValues[peakI] <= angValues[peakI + 1]) {
                     //angular velocity rising -> right step
                     rightContacts.add(i, value);
                     lastStep = StepSide.RIGHT;
                 }
-                else if (angValues[i] < angValues[i - 1] && angValues[i] > angValues [i + 1]) {
-                //else if (angValues[i] < 0) {
+                else if (angValues[peakI] < angValues[peakI - 1] && angValues[peakI] > angValues [peakI + 1]) {
                     //angular velocity falling -> left step
-                    leftContacts.add(i, value);
+                    leftContacts.add(peakI, value);
                     lastStep = StepSide.LEFT;
                 }
                 else {
                     //angular velocity is in a local maxima/minima -> side unsure
-                    otherContacts.add(i, value);
+                    otherContacts.add(peakI, value);
                     lastStep = StepSide.UNKNOWN;
                 }
             }
 
             if (valley_found) {
-                lastValley = i;
+                double value;
+                int valleyI = i;
+
+                for (int j = i + 1; j <= i + replaceWindow && j < accValues.length; j++) {
+                    if (accValues[valleyI] > accValues[j]) {
+                        valleyI = j;
+                    }
+                }
+
+                value = doAcc ? accValues[valleyI] : angValues[valleyI];
+                lastValley = valleyI;
+
                 switch (lastStep) {
                     case LEFT:
-                        leftLifts.add(i, value);
+                        leftLifts.add(valleyI, value);
                         break;
                     case RIGHT:
-                        rightLifts.add(i, value);
+                        rightLifts.add(valleyI, value);
                         break;
                     case UNKNOWN:
-                        otherLifts.add(i, value);
+                        otherLifts.add(valleyI, value);
                         break;
                 }
             }
@@ -182,7 +243,7 @@ public class EventIdentifier {
     /*Complicated ass implementation
     * Taken from https://stackoverflow.com/questions/22583391/peak-signal-detection-in-realtime-timeseries-data/56174275#56174275
     * */
-    public static XYSeries[] getContactEvents(XYSeries series, int lag, double peakInfluence, double threshold) {
+    public static XYSeries[] getContactEventsComplicated(XYSeries series, int lag, double peakInfluence, double threshold) {
         XYSeries contacts = new XYSeries("Peaks");
         List<Double> data = new ArrayList<>();
 
