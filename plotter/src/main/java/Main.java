@@ -111,7 +111,7 @@ public class Main {
 
         try {
             //ConfigGUI gui = new ConfigGUI();
-            Config config = marco2;
+            Config config = marco1;
             boolean filtered = true;
             Data data = CSVInterpeter.read_dataset(config, true);
 

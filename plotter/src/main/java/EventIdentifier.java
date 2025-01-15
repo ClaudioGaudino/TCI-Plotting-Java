@@ -15,76 +15,6 @@ public class EventIdentifier {
     }
     private static final double G = 9.80665 - 0.5;
 
-    /*
-    Un contatto si verifica quando l'accelerazione è in discesa ed attraversa -G
-    Il contatto è destro se la velocità angolare è in salita
-    Il contatto è sinistro se la veloticà angolare è in discesa
-     */
-    public static XYSeries[] getContactEventsInitial(XYSeries accSeries, XYSeries angVelSeries, boolean doAcc) throws IllegalArgumentException {
-        if (accSeries.getItemCount() != angVelSeries.getItemCount())
-            throw new IllegalArgumentException("AccSeries and AngVelSeries have different sizes.");
-
-        int size = accSeries.getItemCount();
-
-        double[] acc = seriesToArray(accSeries);
-        double[] ang = seriesToArray(angVelSeries);
-
-        double accLast = acc[0];
-        double angSlope = 0, angWindowEnd = acc[0];
-
-        int window = 1;
-
-        XYSeries contactsRight = new XYSeries("Right Contacts");
-        XYSeries contactsLeft = new XYSeries("Left Contacts");
-        XYSeries rightDebug = new XYSeries("Right Debug");
-        XYSeries leftDebug = new XYSeries("Left Debug");
-
-        System.out.println("\n\nPrinting " + (doAcc ? "Acceleration" : "Angular Velocity") + "\n");
-
-        boolean hasCutoff = false;
-        int cutoff = 500;
-        double zeroDelta = 0.5;
-        for (int j = 0; j < size; j++) {
-            int i = j;
-
-            if (i == cutoff + 470 ||
-            i == cutoff + 523 ||
-            i == cutoff + 571) {
-                leftDebug.add(i, doAcc ? acc[i] : ang[i]);
-            }
-            if (i == cutoff + 498 ||
-            i == cutoff + 549 ||
-            i == cutoff + 599 ||
-            i == cutoff + 386) {
-                rightDebug.add(i, doAcc ? acc[i] : ang[i]);
-            }
-
-
-            if (i >= window) {
-                angWindowEnd = ang[i - window];
-            }
-            angSlope = angWindowEnd - ang[i];
-
-            if (acc[i] <= -G && accLast > -G) {
-                //Contact detected
-                if (doAcc) {
-                    System.out.println("Step at frame " + i);
-                }
-
-                if (angSlope < 0) {
-                    contactsLeft.add(i, doAcc ?  acc[i] : ang[i]);
-                }
-                else if (angSlope >= 0) {
-                    contactsRight.add(i, doAcc ? acc[i] : ang[i]);
-                }
-            }
-
-            accLast = acc[i];
-        }
-
-        return new XYSeries[]{contactsRight, contactsLeft, rightDebug, leftDebug};
-    }
-
     /**
      * Finds the foot contact and foot lift events throughout a measurement of acceleration and angular velocity.
      * A contact event is identified by a peak (local maxima) in the acceleration values, while a lift event by a valley (local minima).
@@ -203,9 +133,21 @@ public class EventIdentifier {
                     lastStep = StepSide.LEFT;
                 }
                 else {
-                    //angular velocity is in a local maxima/minima -> side unsure
-                    otherContacts.add(peakI, value);
-                    lastStep = StepSide.UNKNOWN;
+                    //angular velocity is in a local maxima/minima -> side unsure -> check previous step and alternate
+                    switch (lastStep) {
+                        case LEFT:
+                            rightContacts.add(peakI, value);
+                            lastStep = StepSide.RIGHT;
+                            break;
+                        case RIGHT:
+                            leftContacts.add(peakI, value);
+                            lastStep = StepSide.LEFT;
+                            break;
+                        case UNKNOWN:
+                            otherContacts.add(peakI, value);
+                            //no need to change lastStep as it already is "UNKNOWN"
+                            break;
+                    }
                 }
             }
 
@@ -239,6 +181,76 @@ public class EventIdentifier {
         return new XYSeries[]{leftContacts, rightContacts, otherContacts, leftLifts, rightLifts, otherLifts};
     }
 
+
+    /*
+    Un contatto si verifica quando l'accelerazione è in discesa ed attraversa -G
+    Il contatto è destro se la velocità angolare è in salita
+    Il contatto è sinistro se la veloticà angolare è in discesa
+     */
+    public static XYSeries[] getContactEventsInitial(XYSeries accSeries, XYSeries angVelSeries, boolean doAcc) throws IllegalArgumentException {
+        if (accSeries.getItemCount() != angVelSeries.getItemCount())
+            throw new IllegalArgumentException("AccSeries and AngVelSeries have different sizes.");
+
+        int size = accSeries.getItemCount();
+
+        double[] acc = seriesToArray(accSeries);
+        double[] ang = seriesToArray(angVelSeries);
+
+        double accLast = acc[0];
+        double angSlope = 0, angWindowEnd = acc[0];
+
+        int window = 1;
+
+        XYSeries contactsRight = new XYSeries("Right Contacts");
+        XYSeries contactsLeft = new XYSeries("Left Contacts");
+        XYSeries rightDebug = new XYSeries("Right Debug");
+        XYSeries leftDebug = new XYSeries("Left Debug");
+
+        System.out.println("\n\nPrinting " + (doAcc ? "Acceleration" : "Angular Velocity") + "\n");
+
+        boolean hasCutoff = false;
+        int cutoff = 500;
+        double zeroDelta = 0.5;
+        for (int j = 0; j < size; j++) {
+            int i = j;
+
+            if (i == cutoff + 470 ||
+                    i == cutoff + 523 ||
+                    i == cutoff + 571) {
+                leftDebug.add(i, doAcc ? acc[i] : ang[i]);
+            }
+            if (i == cutoff + 498 ||
+                    i == cutoff + 549 ||
+                    i == cutoff + 599 ||
+                    i == cutoff + 386) {
+                rightDebug.add(i, doAcc ? acc[i] : ang[i]);
+            }
+
+
+            if (i >= window) {
+                angWindowEnd = ang[i - window];
+            }
+            angSlope = angWindowEnd - ang[i];
+
+            if (acc[i] <= -G && accLast > -G) {
+                //Contact detected
+                if (doAcc) {
+                    System.out.println("Step at frame " + i);
+                }
+
+                if (angSlope < 0) {
+                    contactsLeft.add(i, doAcc ?  acc[i] : ang[i]);
+                }
+                else if (angSlope >= 0) {
+                    contactsRight.add(i, doAcc ? acc[i] : ang[i]);
+                }
+            }
+
+            accLast = acc[i];
+        }
+
+        return new XYSeries[]{contactsRight, contactsLeft, rightDebug, leftDebug};
+    }
 
     /*Complicated ass implementation
     * Taken from https://stackoverflow.com/questions/22583391/peak-signal-detection-in-realtime-timeseries-data/56174275#56174275
