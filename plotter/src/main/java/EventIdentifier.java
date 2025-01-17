@@ -34,7 +34,7 @@ public class EventIdentifier {
      *  5 - the unknown side lifts
      */
     public static XYSeries[] getContactEvents(XYSeries accSeries, XYSeries angSeries, boolean doAcc) {
-        return getContactEvents(accSeries, angSeries, doAcc, 9, 0.5, 1, 12, 5);
+        return getContactEvents(accSeries, angSeries, doAcc, 14, 13, 1, 17, 7);
     }
 
     /**
@@ -79,7 +79,7 @@ public class EventIdentifier {
 
         boolean peak_found, valley_found;
         StepSide lastStep = StepSide.UNKNOWN;
-        int lastPeak = 0, lastValley = 0;
+        int lastPeak = 0, lastValley = 0, first_contact = 0;
 
         for (int i = window; i < accValues.length - window; i++) {
             if (accValues[i] >= peakThreshold && i - lastPeak >= min_time) {
@@ -95,12 +95,12 @@ public class EventIdentifier {
             }
             else peak_found = false;
 
-            if (accValues[i] <= valleyThreshold && i - lastValley >= min_time) {
+            if (accValues[i] >= valleyThreshold && i - lastValley >= min_time) {
                 valley_found = true;
                 for (int j = i - window; j <= i + window; j++) {
                     if (i == j) continue;
 
-                    if (accValues[i] > accValues[j]) {
+                    if (accValues[i] < accValues[j]) {
                         valley_found = false;
                         break;
                     }
@@ -121,16 +121,20 @@ public class EventIdentifier {
                 value = doAcc ? accValues[peakI] : angValues[peakI];
                 lastPeak = peakI;
 
+                if (first_contact == 0) first_contact = peakI;
+
                 //check angular velocity direction
                 if (angValues[peakI] >= angValues[peakI - 1] && angValues[peakI] <= angValues[peakI + 1]) {
                     //angular velocity rising -> right step
                     rightContacts.add(peakI, value);
                     lastStep = StepSide.RIGHT;
+                    System.out.println("Right contact at frame " + peakI);
                 }
                 else if (angValues[peakI] < angValues[peakI - 1] && angValues[peakI] > angValues [peakI + 1]) {
                     //angular velocity falling -> left step
                     leftContacts.add(peakI, value);
                     lastStep = StepSide.LEFT;
+                    System.out.println("Left contact at frame " + peakI);
                 }
                 else {
                     //angular velocity is in a local maxima/minima -> side unsure -> check previous step and alternate
@@ -148,18 +152,26 @@ public class EventIdentifier {
                             //no need to change lastStep as it already is "UNKNOWN"
                             break;
                     }
+                    System.out.println("Unknown contact at frame " + peakI);
                 }
             }
 
             if (valley_found) {
+                /*if (first_valley) {
+                    first_valley = false;
+                    continue;
+                }*/
+
                 double value;
                 int valleyI = i;
 
-                for (int j = i + 1; j <= i + replaceWindow && j < accValues.length; j++) {
-                    if (accValues[valleyI] > accValues[j]) {
+                /*for (int j = i + 1; j <= i + replaceWindow && j < accValues.length; j++) {
+                    if (accValues[valleyI] < accValues[j]) {
                         valleyI = j;
                     }
-                }
+                }*/
+
+                if(valleyI <= first_contact) continue;
 
                 value = doAcc ? accValues[valleyI] : angValues[valleyI];
                 lastValley = valleyI;
@@ -167,12 +179,15 @@ public class EventIdentifier {
                 switch (lastStep) {
                     case LEFT:
                         leftLifts.add(valleyI, value);
+                        System.out.println("Left lift at frame " + valleyI);
                         break;
                     case RIGHT:
                         rightLifts.add(valleyI, value);
+                        System.out.println("Right lift at frame " + valleyI);
                         break;
                     case UNKNOWN:
                         otherLifts.add(valleyI, value);
+                        System.out.println("Unknown lift at frame " + valleyI);
                         break;
                 }
             }
