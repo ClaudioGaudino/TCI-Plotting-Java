@@ -4,23 +4,6 @@ import org.jfree.data.xy.XYSeriesCollection;
 
 public class Main {
     public static void main(String[] args) {
-        String path = "data\\accelerazione.csv";
-
-        /*Config config = new Config(
-                false,
-                "data\\lean_on_faces.csv",
-                "","","",
-                "Acc_X", "Acc_Y", "Acc_Z",
-                "Euler_X", "Euler_Y", "Euler_Z",
-                "Gyr_X", "Gyr_Y", "Gyr_Z",
-                "PacketCounter",
-                "", "", "",
-                true,
-                true,
-                true,
-                true
-        );*/
-
         Config config1 = new Config(
                 true,
                 "",
@@ -140,12 +123,7 @@ public class Main {
                 }
             }
 
-            //System.out.println(data.getAccMagnitude().get(1580));
-
             XYSeriesCollection[] dataset = data.getDataset(config);
-
-            //dataset[0].addSeries(constant("-G", dataset[0].getItemCount(0), -9.80665));
-            //dataset[0].addSeries(constant("+G", dataset[0].getItemCount(0), 9.80665));
 
             AccelerometerPlot p = new AccelerometerPlot(dataset[0], dataset[1]);
         } catch (Exception e) {

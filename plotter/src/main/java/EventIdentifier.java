@@ -369,7 +369,6 @@ public class EventIdentifier {
                 case Left -> leftLiftsSeries.add(e.getFrame(), e.getValue());
                 case Right -> rightLiftsSeries.add(e.getFrame(), e.getValue());
                 case Unknown -> otherLiftsSeries.add(e.getFrame(), e.getValue());
-
             }
         }
 
