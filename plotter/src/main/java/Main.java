@@ -92,16 +92,44 @@ public class Main {
                 false, false, true
         );
 
+        Config pagCentro1 = new Config(
+                true,
+                "",
+                "data\\pagaiata\\centro1\\Pagaiata_centro_accelerazioni.emt", "data\\pagaiata\\centro1\\Pagaiata_centro_angoli.emt", "data\\pagaiata\\centro1\\Pagaiata_centro_velocità_angolari.emt",
+                "GSensor.X", "GSensor.Y", "GSensor.Z",
+                "GSensor.X", "GSensor.Y", "GSensor.Z",
+                "GSensor.X", "GSensor.Y", "GSensor.Z",
+                "Frame",
+                "", "", "",
+                true,false,
+                true,
+                false, false, true
+        );
+
+        Config pagEstremita1 = new Config(
+                true,
+                "",
+                "data\\pagaiata\\estremita1\\Pagaiata_estremità_accelerazioni.emt", "data\\pagaiata\\estremita1\\Pagaiata_estremità_angoli.emt", "data\\pagaiata\\estremita1\\Pagaiata_estremità_velocità_angolari.emt",
+                "GSensor.X", "GSensor.Y", "GSensor.Z",
+                "GSensor.X", "GSensor.Y", "GSensor.Z",
+                "GSensor.X", "GSensor.Y", "GSensor.Z",
+                "Frame",
+                "", "", "",
+                true,false,
+                true,
+                false, false, true
+        );
+
         try {
             //ConfigGUI gui = new ConfigGUI();
-            Config config = marco1;
+            Config config = pagEstremita1;
             boolean filtered = true;
             Data data = CSVInterpeter.read_dataset(config, true);
 
             if (config.isFree())
                 data.makeFree();
             if (filtered) {
-                Butterworth b = new Butterworth(60);
+                Butterworth b = new Butterworth(100);
                 if (config.isUseAccMagnitude()) {
                     data.filter(Data.Axis.MAGNITUDE, Data.Type.ACCELERATION, b, 4, 10);
                 }
@@ -119,7 +147,7 @@ public class Main {
                 }
                 if (config.isPlotZ()) {
                     data.filter(Data.Axis.Z, Data.Type.ACCELERATION, b, 4, 10);
-                    data.filter(Data.Axis.Z, Data.Type.ANG_VELOCITY, b, 4, 10);
+                    data.filter(Data.Axis.Z, Data.Type.ANG_VELOCITY, b, 4, 6);
                 }
             }
 

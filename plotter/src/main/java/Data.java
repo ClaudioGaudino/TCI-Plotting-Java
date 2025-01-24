@@ -355,7 +355,7 @@ public class Data {
         double tmp;
 
         for (int i = 0; i < size; i++) {
-            tmp = Math.sqrt(Math.pow(x.get(i), 2) + Math.pow(y.get(i), 2) + Math.pow(z.get(i) - (removeG ? G : 0), 2)) ;
+            tmp = Math.sqrt(Math.pow(x.get(i), 2) + Math.pow(y.get(i), 2) + Math.pow(z.get(i), 2)) ;
             mag.add(tmp);
         }
 
