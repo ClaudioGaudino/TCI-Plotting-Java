@@ -14,7 +14,8 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.IOException;
-
+import java.util.ArrayList;
+import java.util.List;
 
 public class AccelerometerPlot extends JFrame {
     public AccelerometerPlot(XYSeriesCollection datasetAcc, XYSeriesCollection datasetAngVel) {
@@ -31,18 +32,44 @@ public class AccelerometerPlot extends JFrame {
 
         //XYSeries[] accContacts = EventIdentifier.getContactEvents(datasetAcc.getSeries(0), datasetAngVel.getSeries(0), true);
         //XYSeries[] accContacts = EventIdentifier.getContactEvents(datasetAcc.getSeries(0), 3, 0.2, 8);
-        XYSeries[] accContacts = EventIdentifier.getContactEvents(datasetAcc.getSeries(0), datasetAngVel.getSeries(0), true);
+
+        List<Double> acc = new ArrayList<>();
+        List<Double> ang = new ArrayList<>();
+        XYSeries accSeries = datasetAcc.getSeries(0);
+        XYSeries angSeries = datasetAngVel.getSeries(0);
+        for(int i = 0; i < accSeries.getItemCount(); i++) {
+            acc.add((Double) accSeries.getY(i));
+            ang.add((Double) angSeries.getY(i));
+        }
+
+        List<List<DataPair<Integer, Double>>> accContacts = EventIdentifier.getContactEvents(acc, ang, true);
+        XYSeries[] accContactsSeries = {new XYSeries("Left hit"), new XYSeries("Left Leave"), new XYSeries("Right Hit"), new XYSeries("Right Leave")};
+        DataPair<Integer, Double> tmp;
+        for(int i = 0; i < 4; i++) {
+            for(int j = 0; j < accContacts.get(i).size(); j++) {
+                tmp = accContacts.get(i).get(j);
+                accContactsSeries[i].add(tmp.a(), tmp.b());
+            }
+        }
+
         XYSeriesCollection accContactsCollection = new XYSeriesCollection();
-        for (XYSeries series : accContacts) {
+        for (XYSeries series : accContactsSeries) {
             accContactsCollection.addSeries(series);
         }
 
         plotSetup(xyPlotAcc, accContactsCollection, datasetAcc);
 
         //XYSeries[] angContacts = EventIdentifier.getContactEvents(datasetAcc.getSeries(0), datasetAngVel.getSeries(0), false);
-        XYSeries[] angContacts = EventIdentifier.getContactEvents(datasetAcc.getSeries(0), datasetAngVel.getSeries(0), false);
+        List<List<DataPair<Integer, Double>>> angContacts = EventIdentifier.getContactEvents(acc, ang, false);
+        XYSeries[] angContactsSeries = {new XYSeries("Left hit"), new XYSeries("Left Leave"), new XYSeries("Right Hit"), new XYSeries("Right Leave")};
+        for(int i = 0; i < 4; i++) {
+            for(int j = 0; j < angContacts.get(i).size(); j++) {
+                tmp = angContacts.get(i).get(j);
+                angContactsSeries[i].add(tmp.a(), tmp.b());
+            }
+        }
         XYSeriesCollection angContactsCollection = new XYSeriesCollection();
-        for (XYSeries series : angContacts) {
+        for (XYSeries series : angContactsSeries) {
             angContactsCollection.addSeries(series);
         }
 
@@ -78,7 +105,7 @@ public class AccelerometerPlot extends JFrame {
         chartAngVel.addProgressListener(listener);
 
 
-        saveButton.addActionListener(new ActionListener() {
+        /*saveButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 try {
@@ -88,7 +115,7 @@ public class AccelerometerPlot extends JFrame {
                     throw new RuntimeException(ex);
                 }
             }
-        });
+        });*/
 
         add(chartPanelAcc, BorderLayout.WEST);
         add(chartPanelAngVel, BorderLayout.EAST);

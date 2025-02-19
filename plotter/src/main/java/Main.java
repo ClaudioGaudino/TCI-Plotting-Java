@@ -122,7 +122,7 @@ public class Main {
 
         try {
             //ConfigGUI gui = new ConfigGUI();
-            Config config = pagEstremita1;
+            Config config = pagCentro1;
             boolean filtered = true;
             Data data = CSVInterpeter.read_dataset(config, true);
 

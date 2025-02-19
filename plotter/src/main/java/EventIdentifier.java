@@ -33,7 +33,7 @@ public class EventIdentifier {
      *  4 - the right lifts
      *  5 - the unknown side lifts
      */
-    public static XYSeries[] getContactEvents(XYSeries accSeries, XYSeries angSeries, boolean doAcc) {
+    public static List<List<DataPair<Integer, Double>>> getContactEvents(List<Double> accSeries, List<Double> angSeries, boolean doAcc) {
         //return getContactEvents(accSeries, angSeries, doAcc, 14, 13, 1, 17, 7);
         //return getContactEventsV2(accSeries, angSeries, doAcc, 14, 1, 17, 7);
         //return getPredetermined(accSeries, angSeries, doAcc, true);
@@ -46,31 +46,26 @@ public class EventIdentifier {
      * Finds the instants in which the paddle hits the water and leaves it throughout a measurement of angular velocity.
      * The sensor is assumed to be placed at the CENTER point of the paddle.
      * The underwater phases are marked by periods in which the angular velocity maintains a semi-constant value.
-     * The left underwater phase is found from the first valley lower than 0 to the last consecutive valley that is still lower than 0, as the rotation of the paddle is steady and counter clockwise (negative ang vel)
+     * The left underwater phase is found from the first valley lower than 0 to the last consecutive valley that is still lower than 0, as the rotation of the paddle is steady and counterclockwise (negative ang vel)
      * The right underwater phase is found from the first peak higher than 0 to the last consecutive peak that is still higher than 0, as the rotation of the paddle is steady and clockwise (positive ang vel)
-     * @param zAngVelSeries a series containing pairs (frame, value) of the oar's angular velocity around the Z (VERTICAL) axis, placed at the CENTER of the paddle.
+     * @param zAngVel a list containing the value of the paddle's angular velocity around the Z (VERTICAL) axis, placed at the CENTER of the paddle.
      * @param window how far back and ahead of a given point to check wether it is a peak or valley
      * @param lowerThreshold the threshold under which the data points are considered to be in the left underwater section
-     * @param upperThreshold the threshold over which the data points are considered to be in the right underwarer section
-     * @return an array of series containing (in order):
+     * @param upperThreshold the threshold over which the data points are considered to be in the right underwater section
+     * @return a list of lists containing (in order):
      * 0 - left hits
      * 1 - left leaves
      * 2 - right hits
      * 3 - right leaves
      */
-    public static XYSeries[] getPaddlingEvents(XYSeries zAngVelSeries, int window, double lowerThreshold, double upperThreshold) {
+    public static List<List<DataPair<Integer, Double>>> getPaddlingEvents(List<Double> zAngVel, int window, double lowerThreshold, double upperThreshold) {
         if (lowerThreshold > upperThreshold)
             throw new IllegalArgumentException();
 
-        XYSeries leftHit = new XYSeries("Left hit");
-        XYSeries leftLeave = new XYSeries("Left leave");
-        XYSeries rightHit = new XYSeries("Right hit");
-        XYSeries rightLeave = new XYSeries("Right leave");
-        double[] angVel = new double[zAngVelSeries.getItemCount()];
-
-        for (int i = 0; i < angVel.length; i++) {
-            angVel[i] = (double) zAngVelSeries.getY(i);
-        }
+        List<DataPair<Integer, Double>> leftHit = new ArrayList<>();
+        List<DataPair<Integer, Double>> leftLeave = new ArrayList<>();
+        List<DataPair<Integer, Double>> rightHit = new ArrayList<>();
+        List<DataPair<Integer, Double>> rightLeave = new ArrayList<>();
 
         boolean inLeftZone = false, inRightZone = false;
         boolean justEntered = false;
@@ -78,20 +73,20 @@ public class EventIdentifier {
 
         int tmpHit = 0, tmpLeave = 0;
 
-        for (int i = 1; i < angVel.length; i++) {
-            if (angVel[i] < lowerThreshold && angVel[i - 1] >= lowerThreshold) {
+        for (int i = 1; i < zAngVel.size(); i++) {
+            if (zAngVel.get(i) < lowerThreshold && zAngVel.get(i - 1) >= lowerThreshold) {
                 inLeftZone = true;
                 justEntered = true;
             }
-            if (angVel[i - 1] < lowerThreshold && angVel[i] >= lowerThreshold) {
+            if (zAngVel.get(i - 1) < lowerThreshold && zAngVel.get(i) >= lowerThreshold) {
                 inLeftZone = false;
                 tmpHit = 0;
             }
-            if (angVel[i] > upperThreshold && angVel[i - 1] <= upperThreshold) {
+            if (zAngVel.get(i) > upperThreshold && zAngVel.get(i - 1) <= upperThreshold) {
                 inRightZone = true;
                 justEntered = true;
             }
-            if (angVel[i - 1] > upperThreshold && angVel[i] <= upperThreshold) {
+            if (zAngVel.get(i - 1) > upperThreshold && zAngVel.get(i) <= upperThreshold) {
                 inRightZone = false;
                 tmpHit = 0;
             }
@@ -99,10 +94,10 @@ public class EventIdentifier {
             if (inLeftZone) {
                 if (justEntered) {
                     if (tmpHit != 0)
-                        rightHit.add(tmpHit, angVel[tmpLeave]);
+                        rightHit.add(new DataPair<>(tmpHit, zAngVel.get(tmpLeave)));
                     tmpHit = 0;
                     if (tmpLeave != 0)
-                        rightLeave.add(tmpLeave, angVel[tmpLeave]);
+                        rightLeave.add(new DataPair<>(tmpLeave, zAngVel.get(tmpLeave)));
                     tmpLeave = 0;
                     justEntered = false;
                 }
@@ -111,7 +106,7 @@ public class EventIdentifier {
                 for (int j = i - window; j <= i + window; j++) {
                     if (i == j) continue;
 
-                    if (angVel[i] > angVel[j]) {
+                    if (zAngVel.get(i) > zAngVel.get(j)) {
                         foundValley = false;
                         break;
                     }
@@ -120,7 +115,7 @@ public class EventIdentifier {
                 if (foundValley) {
                     if (tmpHit == 0) {
                         tmpHit = i;
-                        leftHit.add(i, angVel[i]);
+                        leftHit.add(new DataPair<>(i, zAngVel.get(i)));
                     } else {
                         tmpLeave = i;
                     }
@@ -128,10 +123,10 @@ public class EventIdentifier {
             } else if (inRightZone) {
                 if (justEntered) {
                     if (tmpHit != 0)
-                        leftHit.add(tmpHit, angVel[tmpLeave]);
+                        leftHit.add(new DataPair<>(tmpHit, zAngVel.get(tmpLeave)));
                     tmpHit = 0;
                     if (tmpLeave != 0)
-                        leftLeave.add(tmpLeave, angVel[tmpLeave]);
+                        leftLeave.add(new DataPair<>(tmpLeave, zAngVel.get(tmpLeave)));
                     tmpLeave = 0;
                     justEntered = false;
                 }
@@ -140,7 +135,7 @@ public class EventIdentifier {
                 for (int j = i - window; j <= i + window; j++) {
                     if (i == j) continue;
 
-                    if (angVel[i] < angVel[j]) {
+                    if (zAngVel.get(i) < zAngVel.get(j)) {
                         foundPeak = false;
                         break;
                     }
@@ -149,23 +144,29 @@ public class EventIdentifier {
                 if (foundPeak) {
                     if (tmpHit == 0) {
                         tmpHit = i;
-                        rightHit.add(i, angVel[i]);
+                        rightHit.add(new DataPair<>(i, zAngVel.get(i)));
                     } else {
                         tmpLeave = i;
                     }
                 }
             } else {
                 if (tmpLeave != 0) {
-                    if (angVel[tmpLeave] < 0)
-                        leftLeave.add(tmpLeave, angVel[tmpLeave]);
+                    if (zAngVel.get(tmpLeave) < 0)
+                        leftLeave.add(new DataPair<>(tmpLeave, zAngVel.get(tmpLeave)));
                     else
-                        rightLeave.add(tmpLeave, angVel[tmpLeave]);
+                        rightLeave.add(new DataPair<>(tmpLeave, zAngVel.get(tmpLeave)));
                     tmpLeave = 0;
                 }
             }
         }
 
-        return new XYSeries[]{leftHit, leftLeave, rightHit, rightLeave};
+        List<List<DataPair<Integer, Double>>> out = new ArrayList<>();
+        out.add(leftHit);
+        out.add(leftLeave);
+        out.add(rightHit);
+        out.add(rightLeave);
+
+        return out;
     }
 
 
