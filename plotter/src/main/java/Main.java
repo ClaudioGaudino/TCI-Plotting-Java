@@ -126,26 +126,26 @@ public class Main {
             boolean filtered = true;
             Data data = CSVInterpeter.read_dataset(config, true);
 
-            if (config.isFree())
+            if (config.free())
                 data.makeFree();
             if (filtered) {
                 Butterworth b = new Butterworth(100);
-                if (config.isUseAccMagnitude()) {
+                if (config.useAccMagnitude()) {
                     data.filter(Data.Axis.MAGNITUDE, Data.Type.ACCELERATION, b, 4, 10);
                 }
-                if (config.isUseAngVelMagnitude()) {
+                if (config.useAngVelMagnitude()) {
                     data.filter(Data.Axis.MAGNITUDE, Data.Type.ANG_VELOCITY, b, 4, 10);
                 }
 
-                if (config.isPlotX()) {
+                if (config.plotX()) {
                     data.filter(Data.Axis.X, Data.Type.ACCELERATION, b, 4, 10);
                     data.filter(Data.Axis.X, Data.Type.ANG_VELOCITY, b, 4, 10);
                 }
-                if (config.isPlotY()) {
+                if (config.plotY()) {
                     data.filter(Data.Axis.Y, Data.Type.ACCELERATION, b, 4, 10);
                     data.filter(Data.Axis.Y, Data.Type.ANG_VELOCITY, b, 4, 10);
                 }
-                if (config.isPlotZ()) {
+                if (config.plotZ()) {
                     data.filter(Data.Axis.Z, Data.Type.ACCELERATION, b, 4, 10);
                     data.filter(Data.Axis.Z, Data.Type.ANG_VELOCITY, b, 4, 6);
                 }

@@ -98,9 +98,9 @@ public class CSVInterpeter {
 
         double angXTmp = 0, angYTmp = 0, angZTmp = 0, accXTmp = 0, accYTmp = 0, accZTmp = 0, angVelXTmp = 0, angVelYTmp = 0, angVelZTmp = 0;
 
-        if (!config.isMultifile()) {
-            String filepath = config.getFilePath();
-            if (config.getFilePath().endsWith(".emt")) {
+        if (!config.multifile()) {
+            String filepath = config.filePath();
+            if (config.filePath().endsWith(".emt")) {
                 EmtFileHandler.convert(filepath);
                 filepath = filepath.replace(".emt", ".csv");
             }
@@ -116,34 +116,34 @@ public class CSVInterpeter {
 
                         i = 0;
                         for(String entry : line) {
-                            if (entry.equals(config.getAccColX())) {
+                            if (entry.equals(config.accColX())) {
                                 accOffsets[0] = i;
                             }
-                            else if (entry.equals(config.getAccColY())) {
+                            else if (entry.equals(config.accColY())) {
                                 accOffsets[1] = i;
                             }
-                            else if (entry.equals(config.getAccColZ())) {
+                            else if (entry.equals(config.accColZ())) {
                                 accOffsets[2] = i;
                             }
-                            else if (entry.equals(config.getAngColX())) {
+                            else if (entry.equals(config.angColX())) {
                                 angOffsets[0] = i;
                             }
-                            else if (entry.equals(config.getAngColY())) {
+                            else if (entry.equals(config.angColY())) {
                                 angOffsets[1] = i;
                             }
-                            else if (entry.equals(config.getAngColZ())) {
+                            else if (entry.equals(config.angColZ())) {
                                 angOffsets[2] = i;
                             }
-                            else if (entry.equals(config.getAngVelColX())) {
+                            else if (entry.equals(config.angVelColX())) {
                                 angVelOffsets[0] = i;
                             }
-                            else if (entry.equals(config.getAngVelColY())) {
+                            else if (entry.equals(config.angVelColY())) {
                                 angVelOffsets[1] = i;
                             }
-                            else if (entry.equals(config.getAngVelColZ())) {
+                            else if (entry.equals(config.angVelColZ())) {
                                 angVelOffsets[2] = i;
                             }
-                            else if (entry.equals(config.getIndexCol())) {
+                            else if (entry.equals(config.indexCol())) {
                                 frameOffset = i;
                             }
 
@@ -209,8 +209,8 @@ public class CSVInterpeter {
             }
         }
         else {
-            String filepath = config.getAccelerationFilePath();
-            if (config.getAccelerationFilePath().endsWith(".emt")) {
+            String filepath = config.accelerationFilePath();
+            if (config.accelerationFilePath().endsWith(".emt")) {
                 EmtFileHandler.convert(filepath);
                 filepath = filepath.replace(".emt", ".csv");
             }
@@ -224,13 +224,13 @@ public class CSVInterpeter {
                     if (firstLine) {
                         int j = 0;
                         for (String entry : line) {
-                            if (entry.equals(config.getAccColX())) {
+                            if (entry.equals(config.accColX())) {
                                 accOffsets[0] = j;
                             }
-                            else if (entry.equals(config.getAccColY())) {
+                            else if (entry.equals(config.accColY())) {
                                 accOffsets[1] = j;
                             }
-                            else if (entry.equals(config.getAccColZ())) {
+                            else if (entry.equals(config.accColZ())) {
                                 accOffsets[2] = j;
                             }
                             j++;
@@ -245,8 +245,8 @@ public class CSVInterpeter {
                 }
             }
 
-            filepath = config.getAnglesFilePath();
-            if (config.getAnglesFilePath().endsWith(".emt")) {
+            filepath = config.anglesFilePath();
+            if (config.anglesFilePath().endsWith(".emt")) {
                 EmtFileHandler.convert(filepath);
                 filepath = filepath.replace(".emt", ".csv");
             }
@@ -259,13 +259,13 @@ public class CSVInterpeter {
                 while ((line = angReader.readNext()) != null) {
                     if (firstLine) {
                         for (String entry : line) {
-                            if (entry.equals(config.getAngColX())) {
+                            if (entry.equals(config.angColX())) {
                                 accOffsets[0] = i;
                             }
-                            else if (entry.equals(config.getAngColY())) {
+                            else if (entry.equals(config.angColY())) {
                                 accOffsets[1] = i;
                             }
-                            else if (entry.equals(config.getAngColZ())) {
+                            else if (entry.equals(config.angColZ())) {
                                 accOffsets[2] = i;
                             }
                             i++;
@@ -278,8 +278,8 @@ public class CSVInterpeter {
                 }
             }
 
-            filepath = config.getAngularVelocityFilePath();
-            if (config.getAngularVelocityFilePath().endsWith(".emt")) {
+            filepath = config.angularVelocityFilePath();
+            if (config.angularVelocityFilePath().endsWith(".emt")) {
                 EmtFileHandler.convert(filepath);
                 filepath = filepath.replace(".emt", ".csv");
             }
@@ -292,13 +292,13 @@ public class CSVInterpeter {
                 while ((line = angVelReader.readNext()) != null) {
                     if (firstLine) {
                         for (String entry : line) {
-                            if (entry.equals(config.getAngVelColX())) {
+                            if (entry.equals(config.angVelColX())) {
                                 angVelOffsets[0] = i;
                             }
-                            else if (entry.equals(config.getAngVelColY())) {
+                            else if (entry.equals(config.angVelColY())) {
                                 angVelOffsets[1] = i;
                             }
-                            else if (entry.equals(config.getAngVelColZ())) {
+                            else if (entry.equals(config.angVelColZ())) {
                                 angVelOffsets[2] = i;
                             }
                             i++;

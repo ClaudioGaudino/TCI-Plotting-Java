@@ -103,37 +103,37 @@ public class ConfigGUI extends JFrame {
                         plotZCheckBox.isSelected()
                 );
 
-                if (config.isMultifile()
-                        && (config.getAccelerationFilePath().isBlank()
-                        || config.getAnglesFilePath().isBlank()
-                        || config.getAngularVelocityFilePath().isBlank())) {
+                if (config.multifile()
+                        && (config.accelerationFilePath().isBlank()
+                        || config.anglesFilePath().isBlank()
+                        || config.angularVelocityFilePath().isBlank())) {
                     feedbackArea.setText("L'opzione per l'utilizzo di molteplici file è stata selezionata, ma almeno uno dei tre percorsi è stato lasciato vuoto.");
                     return;
                 }
 
-                if (!config.isMultifile() && config.getFilePath().isBlank()) {
+                if (!config.multifile() && config.filePath().isBlank()) {
                     feedbackArea.setText("L'opzione per l'utilizzo di un file singolo è stata selezionata, ma il percorso del file è stato lasciato vuoto.");
                     return;
                 }
 
-                if (config.getAccColX().isBlank() || config.getAccColY().isBlank() || config.getAccColZ().isBlank()) {
+                if (config.accColX().isBlank() || config.accColY().isBlank() || config.accColZ().isBlank()) {
                     feedbackArea.setText("Il nome di almeno una delle colonne dell'accelerazione è stato lasciato vuoto.");
                     return;
                 }
-                if (config.getAngColX().isBlank() || config.getAngColY().isBlank() || config.getAngColZ().isBlank()) {
+                if (config.angColX().isBlank() || config.angColY().isBlank() || config.angColZ().isBlank()) {
                     feedbackArea.setText("Il nome di almeno una delle colonne dell'angolazione è stato lasciato vuoto.");
                     return;
                 }
-                if (config.getAngVelColX().isBlank() || config.getAngVelColY().isBlank() || config.getAngVelColZ().isBlank()) {
+                if (config.angVelColX().isBlank() || config.angVelColY().isBlank() || config.angVelColZ().isBlank()) {
                     feedbackArea.setText("Il nome di almeno una delle colonne della velocità angolare è stato lasciato vuoto.");
                     return;
                 }
 
-                if (config.getIndexCol().isBlank()) {
+                if (config.indexCol().isBlank()) {
                     feedbackArea.setText("Il nome della colonna indice è stato lasciato vuoto.");
                 }
 
-                if (!config.isPlotX() && !config.isPlotY() && !config.isPlotZ()) {
+                if (!config.plotX() && !config.plotY() && !config.plotZ()) {
                     feedbackArea.setText("Nessuno degli assi è stato selezionato, questo causerebbe un grafico vuoto!");
                     return;
                 }
@@ -142,20 +142,20 @@ public class ConfigGUI extends JFrame {
                     boolean filtered = true;
                     Data data = CSVInterpeter.read_dataset(config, true);
 
-                    if (config.isFree())
+                    if (config.free())
                         data.makeFree();
                     if (filtered) {
                         Butterworth b = new Butterworth(100);
 
-                        if (config.isPlotX()) {
+                        if (config.plotX()) {
                             data.filter(Data.Axis.X, Data.Type.ACCELERATION, b, 4, 10);
                             data.filter(Data.Axis.X, Data.Type.ANG_VELOCITY, b, 4, 10);
                         }
-                        if (config.isPlotY()) {
+                        if (config.plotY()) {
                             data.filter(Data.Axis.Y, Data.Type.ACCELERATION, b, 4, 10);
                             data.filter(Data.Axis.Y, Data.Type.ANG_VELOCITY, b, 4, 10);
                         }
-                        if (config.isPlotZ()) {
+                        if (config.plotZ()) {
                             data.filter(Data.Axis.Z, Data.Type.ACCELERATION, b, 4, 10);
                             data.filter(Data.Axis.Z, Data.Type.ANG_VELOCITY, b, 4, 10);
                         }

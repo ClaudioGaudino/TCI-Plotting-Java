@@ -175,7 +175,7 @@ public class Data {
         XYSeriesCollection datasetAcc = new XYSeriesCollection();
         XYSeriesCollection datasetAngVel = new XYSeriesCollection();
 
-        if (config.isUseAccMagnitude()) {
+        if (config.useAccMagnitude()) {
             XYSeries accMagnitudeSeries = new XYSeries("Acceleration (Magnitude)");
 
             getAccMagnitude();
@@ -190,39 +190,39 @@ public class Data {
             XYSeries accYSeries = new XYSeries("Y Acceleration");
             XYSeries accZSeries = new XYSeries("Z Acceleration");
 
-            List<Double> localAccX = config.isFree() ? this.freeAccX : this.accX;
-            List<Double> localAccY = config.isFree() ? this.freeAccY : this.accY;
-            List<Double> localAccZ = config.isFree() ? this.freeAccZ : this.accZ;
+            List<Double> localAccX = config.free() ? this.freeAccX : this.accX;
+            List<Double> localAccY = config.free() ? this.freeAccY : this.accY;
+            List<Double> localAccZ = config.free() ? this.freeAccZ : this.accZ;
 
             for (int frame = 0; frame < size; frame++) {
-                if (config.isPlotX()) {
-                    if (config.isFree()) {
+                if (config.plotX()) {
+                    if (config.free()) {
                         accXSeries.add(frame, localAccX.get(frame));
                     } else {
                         accXSeries.add(frame, localAccX.get(frame));
                     }
 
                 }
-                if (config.isPlotY()) {
+                if (config.plotY()) {
                     accYSeries.add(frame, localAccY.get(frame));
                 }
-                if (config.isPlotZ()) {
+                if (config.plotZ()) {
                     accZSeries.add(frame, localAccZ.get(frame));
                 }
             }
 
-            if (config.isPlotX()) {
+            if (config.plotX()) {
                 datasetAcc.addSeries(accXSeries);
             }
-            if (config.isPlotY()) {
+            if (config.plotY()) {
                 datasetAcc.addSeries(accYSeries);
             }
-            if (config.isPlotZ()) {
+            if (config.plotZ()) {
                 datasetAcc.addSeries(accZSeries);
             }
         }
 
-        if (config.isUseAngVelMagnitude()) {
+        if (config.useAngVelMagnitude()) {
             XYSeries angVelMagnitudeSeries = new XYSeries("Angular Velocity (Magnitude)");
 
             getAngVelMagnitude();
@@ -237,34 +237,34 @@ public class Data {
             XYSeries angVelYSeries = new XYSeries("Y Angular Velocity");
             XYSeries angVelZSeries = new XYSeries("Z Angular Velocity");
 
-            List<Double> localAngVelX = config.isFree() ? this.freeAngVelX : this.angVelX;
-            List<Double> localAngVelY = config.isFree() ? this.freeAngVelY : this.angVelY;
-            List<Double> localAngVelZ = config.isFree() ? this.freeAngVelZ : this.angVelZ;
+            List<Double> localAngVelX = config.free() ? this.freeAngVelX : this.angVelX;
+            List<Double> localAngVelY = config.free() ? this.freeAngVelY : this.angVelY;
+            List<Double> localAngVelZ = config.free() ? this.freeAngVelZ : this.angVelZ;
 
             for (int frame = 0; frame < size; frame++) {
-                if (config.isPlotX()) {
-                    if (config.isFree()) {
+                if (config.plotX()) {
+                    if (config.free()) {
                         angVelXSeries.add(frame, localAngVelX.get(frame));
                     } else {
                         angVelXSeries.add(frame, localAngVelZ.get(frame));
                     }
 
                 }
-                if (config.isPlotY()) {
+                if (config.plotY()) {
                     angVelYSeries.add(frame, localAngVelY.get(frame));
                 }
-                if (config.isPlotZ()) {
+                if (config.plotZ()) {
                     angVelZSeries.add(frame, localAngVelZ.get(frame));
                 }
             }
 
-            if (config.isPlotX()) {
+            if (config.plotX()) {
                 datasetAngVel.addSeries(angVelXSeries);
             }
-            if (config.isPlotY()) {
+            if (config.plotY()) {
                 datasetAngVel.addSeries(angVelYSeries);
             }
-            if (config.isPlotZ()) {
+            if (config.plotZ()) {
                 datasetAngVel.addSeries(angVelZSeries);
             }
         }
