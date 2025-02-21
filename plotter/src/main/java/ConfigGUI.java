@@ -100,7 +100,7 @@ public class ConfigGUI extends JFrame {
                         false, false, freeCheckBox.isSelected(),
                         plotXCheckBox.isSelected(),
                         plotYCheckBox.isSelected(),
-                        plotZCheckBox.isSelected()
+                        plotZCheckBox.isSelected(), ""
                 );
 
                 if (config.multifile()
@@ -140,7 +140,7 @@ public class ConfigGUI extends JFrame {
 
                 try {
                     boolean filtered = true;
-                    Data data = CSVInterpeter.readAccelerometerData(config, true);
+                    AccelerometerData data = CSVInterpeter.readAccelerometerData(config, true);
 
                     if (config.free())
                         data.makeFree();
@@ -148,16 +148,16 @@ public class ConfigGUI extends JFrame {
                         Butterworth b = new Butterworth(100);
 
                         if (config.plotX()) {
-                            data.filter(Data.Axis.X, Data.Type.ACCELERATION, b, 4, 10);
-                            data.filter(Data.Axis.X, Data.Type.ANG_VELOCITY, b, 4, 10);
+                            data.filter(AccelerometerData.Axis.X, AccelerometerData.Type.ACCELERATION, b, 4, 10);
+                            data.filter(AccelerometerData.Axis.X, AccelerometerData.Type.ANG_VELOCITY, b, 4, 10);
                         }
                         if (config.plotY()) {
-                            data.filter(Data.Axis.Y, Data.Type.ACCELERATION, b, 4, 10);
-                            data.filter(Data.Axis.Y, Data.Type.ANG_VELOCITY, b, 4, 10);
+                            data.filter(AccelerometerData.Axis.Y, AccelerometerData.Type.ACCELERATION, b, 4, 10);
+                            data.filter(AccelerometerData.Axis.Y, AccelerometerData.Type.ANG_VELOCITY, b, 4, 10);
                         }
                         if (config.plotZ()) {
-                            data.filter(Data.Axis.Z, Data.Type.ACCELERATION, b, 4, 10);
-                            data.filter(Data.Axis.Z, Data.Type.ANG_VELOCITY, b, 4, 10);
+                            data.filter(AccelerometerData.Axis.Z, AccelerometerData.Type.ACCELERATION, b, 4, 10);
+                            data.filter(AccelerometerData.Axis.Z, AccelerometerData.Type.ANG_VELOCITY, b, 4, 10);
                         }
                     }
 

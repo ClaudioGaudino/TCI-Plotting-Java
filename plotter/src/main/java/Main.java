@@ -21,7 +21,7 @@ public class Main {
                 true,
                 false,
                 false,
-                true
+                true, ""
         );
 
         Config config2 = new Config(
@@ -37,7 +37,7 @@ public class Main {
                 true,
                 false,
                 false,
-                true
+                true, ""
         );
 
         Config config3 = new Config(
@@ -51,7 +51,7 @@ public class Main {
                 "", "", "",
                 true,false,
                 true,
-                false, false, true
+                false, false, true, ""
         );
 
         Config marco1 = new Config(
@@ -65,7 +65,7 @@ public class Main {
                 "", "", "",
                 true, false,
                 true,
-                false, false, true
+                false, false, true, ""
         );
 
         Config marco2 = new Config(
@@ -79,7 +79,7 @@ public class Main {
                 "", "", "",
                 true, false,
                 true,
-                false, false, true
+                false, false, true, ""
         );
 
         Config marco3 = new Config(
@@ -93,7 +93,7 @@ public class Main {
                 "", "", "",
                 true, false,
                 true,
-                false, false, true
+                false, false, true, ""
         );
 
         Config pagCentro1 = new Config(
@@ -107,7 +107,8 @@ public class Main {
                 "", "", "",
                 true,false,
                 true,
-                false, false, true
+                false, false, true,
+                "data\\EMGs.csv"
         );
 
         Config pagEstremita1 = new Config(
@@ -121,47 +122,63 @@ public class Main {
                 "", "", "",
                 true,false,
                 true,
-                false, false, true
+                false, false, true, ""
         );
 
         try {
             //ConfigGUI gui = new ConfigGUI();
             Config config = pagCentro1;
             boolean filtered = true;
-            Data data = CSVInterpeter.readAccelerometerData(config, true);
+            AccelerometerData accelerometerData = CSVInterpeter.readAccelerometerData(config, true);
 
             if (config.free())
-                data.makeFree();
+                accelerometerData.makeFree();
             if (filtered) {
                 Butterworth b = new Butterworth(100);
                 if (config.useAccMagnitude()) {
-                    data.filter(Data.Axis.MAGNITUDE, Data.Type.ACCELERATION, b, 4, 10);
+                    accelerometerData.filter(AccelerometerData.Axis.MAGNITUDE, AccelerometerData.Type.ACCELERATION, b, 4, 10);
                 }
                 if (config.useAngVelMagnitude()) {
-                    data.filter(Data.Axis.MAGNITUDE, Data.Type.ANG_VELOCITY, b, 4, 10);
+                    accelerometerData.filter(AccelerometerData.Axis.MAGNITUDE, AccelerometerData.Type.ANG_VELOCITY, b, 4, 10);
                 }
 
                 if (config.plotX()) {
-                    data.filter(Data.Axis.X, Data.Type.ACCELERATION, b, 4, 10);
-                    data.filter(Data.Axis.X, Data.Type.ANG_VELOCITY, b, 4, 10);
+                    accelerometerData.filter(AccelerometerData.Axis.X, AccelerometerData.Type.ACCELERATION, b, 4, 10);
+                    accelerometerData.filter(AccelerometerData.Axis.X, AccelerometerData.Type.ANG_VELOCITY, b, 4, 10);
                 }
                 if (config.plotY()) {
-                    data.filter(Data.Axis.Y, Data.Type.ACCELERATION, b, 4, 10);
-                    data.filter(Data.Axis.Y, Data.Type.ANG_VELOCITY, b, 4, 10);
+                    accelerometerData.filter(AccelerometerData.Axis.Y, AccelerometerData.Type.ACCELERATION, b, 4, 10);
+                    accelerometerData.filter(AccelerometerData.Axis.Y, AccelerometerData.Type.ANG_VELOCITY, b, 4, 10);
                 }
                 if (config.plotZ()) {
-                    data.filter(Data.Axis.Z, Data.Type.ACCELERATION, b, 4, 10);
-                    data.filter(Data.Axis.Z, Data.Type.ANG_VELOCITY, b, 4, 6);
+                    accelerometerData.filter(AccelerometerData.Axis.Z, AccelerometerData.Type.ACCELERATION, b, 4, 10);
+                    accelerometerData.filter(AccelerometerData.Axis.Z, AccelerometerData.Type.ANG_VELOCITY, b, 4, 6);
                 }
             }
 
-            XYSeriesCollection[] dataset = data.getDataset(config);
+            XYSeriesCollection[] dataset = accelerometerData.getDataset(config);
 
-            List<PaddleEvent> events = EventIdentifier.getPaddlingEvents(data.getFreeAngVelZ(), 1, -10, 10);
+            List<PaddleEvent> events = EventIdentifier.getPaddlingEvents(accelerometerData.getFreeAngVelZ(), 1, -10, 10);
 
-            XYSeriesCollection eventCollection = makeEventCollection(events, data);
+            XYSeriesCollection eventCollection = makeEventCollection(events, accelerometerData);
 
             GeneralPlotter plotter = new GeneralPlotter("Plot", "Frame", "Ampl", dataset[1], eventCollection);
+
+            EMGData emgData = CSVInterpeter.readEMGData(config);
+            emgData.filter();
+
+            XYSeriesCollection emgSignals = new XYSeriesCollection();
+            for (int i = 2; i < emgData.getSignals().size(); i++) {
+                XYSeries tmp = new XYSeries(emgData.getHeaders().get(i));
+
+                for (double frame : emgData.getSignals().get(0)) {
+                    tmp.add(frame, emgData.getFilteredSignals().get(i).get((int) frame));
+                }
+
+                emgSignals.addSeries(tmp);
+            }
+
+            GeneralPlotter emgPlotter = new GeneralPlotter("Emg", "Frame", "Ampl", emgSignals, null);
 
 
         } catch (Exception e) {
@@ -169,13 +186,15 @@ public class Main {
         }
     }
 
-    private static XYSeriesCollection makeEventCollection(List<PaddleEvent> events, Data data) {
+    private static XYSeriesCollection makeEventCollection(List<PaddleEvent> events, AccelerometerData data) {
         XYSeriesCollection eventCollection = new XYSeriesCollection();
         XYSeries leftHits = new XYSeries("Left Hits");
         XYSeries rightHits = new XYSeries("Right Hits");
         XYSeries leftLeaves = new XYSeries("Left Leaves");
         XYSeries rightLeaves = new XYSeries("Right Leaves");
+
         double i, value;
+
         for (PaddleEvent event : events) {
             i = event.frame();
             value = data.getFreeAngVelZ().get(event.frame());

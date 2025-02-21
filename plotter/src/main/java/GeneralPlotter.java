@@ -9,6 +9,8 @@ import org.jfree.data.xy.XYSeriesCollection;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 
 public class GeneralPlotter extends JFrame {
     private XYSeriesCollection signals;
@@ -17,12 +19,77 @@ public class GeneralPlotter extends JFrame {
     private XYPlot plot;
     private JFreeChart chart;
 
+    private int signalsIndex, pointsIndex;
+
     public GeneralPlotter(String title, String xLabel, String yLabel, XYSeriesCollection signals, XYSeriesCollection pointSets) {
         super(title);
 
         this.signals = signals;
         this.pointSets = pointSets;
 
+        signalsIndex = signals.getSeriesCount();
+        pointsIndex = pointSets.getSeriesCount();
+
+        makeChart(title, xLabel, yLabel, signals, pointSets);
+
+        JPanel leftButtons = new JPanel();
+        JButton signalsPrev = new JButton("<");
+        JButton pointsPrev = new JButton("<");
+
+        signalsPrev.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                signalsIndex--;
+                if (signalsIndex < 0) {
+                    signalsIndex = signals.getSeriesCount();
+                }
+
+                updateChart();
+            }
+        });
+        pointsPrev.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                pointsIndex--;
+                if (pointsIndex < 0) {
+                    pointsIndex = signals.getSeriesCount();
+                }
+
+                updateChart();
+            }
+        });
+
+        JPanel rightButtons = new JPanel();
+        JButton signalsNext = new JButton(">");
+        JButton pointsNext = new JButton(">");
+
+
+        ChartPanel chartPanel = new ChartPanel(chart);
+        chartPanel.setPreferredSize(new Dimension(800, 600));
+
+        leftButtons.setLayout(new BoxLayout(leftButtons, BoxLayout.Y_AXIS));
+        rightButtons.setLayout(new BoxLayout(rightButtons, BoxLayout.Y_AXIS));
+        setLayout(new BorderLayout());
+
+        leftButtons.add(signalsPrev);
+        leftButtons.add(pointsPrev);
+
+        rightButtons.add(signalsNext);
+        rightButtons.add(pointsNext);
+
+        add(chartPanel, BorderLayout.CENTER);
+        add(leftButtons, BorderLayout.WEST);
+        add(rightButtons, BorderLayout.EAST);
+        pack();
+        setDefaultCloseOperation(EXIT_ON_CLOSE);
+        setVisible(true);
+    }
+
+    private void updateChart() {
+
+    }
+
+    private void makeChart(String title, String xLabel, String yLabel, XYSeriesCollection signals, XYSeriesCollection pointSets) {
         plot = new XYPlot();
         plot.setDomainPannable(true);
         plot.setRangePannable(true);
@@ -59,14 +126,6 @@ public class GeneralPlotter extends JFrame {
                 plot,
                 true
         );
-
-        ChartPanel panel = new ChartPanel(chart);
-        panel.setPreferredSize(new Dimension(800, 600));
-
-        add(panel, BorderLayout.CENTER);
-        pack();
-        setDefaultCloseOperation(EXIT_ON_CLOSE);
-        setVisible(true);
     }
 
 }

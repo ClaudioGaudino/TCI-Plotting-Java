@@ -4,6 +4,7 @@ import org.jfree.data.xy.XYSeries;
 import com.opencsv.CSVReader;
 import org.jfree.data.xy.XYSeriesCollection;
 
+import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -69,7 +70,7 @@ public class CSVInterpeter {
         }
     }
 
-    public static Data readAccelerometerData(Config config, boolean filtered) throws IOException, CsvValidationException {
+    public static AccelerometerData readAccelerometerData(Config config, boolean filtered) throws IOException, CsvValidationException {
         XYSeriesCollection datasetAcc = new XYSeriesCollection();
         XYSeriesCollection datasetAngVel = new XYSeriesCollection();
 
@@ -307,7 +308,44 @@ public class CSVInterpeter {
                 }
             }
         }
-        return new Data(accX, accY, accZ, angX, angY, angZ, angVelX, angVelY, angVelZ);
+        return new AccelerometerData(accX, accY, accZ, angX, angY, angZ, angVelX, angVelY, angVelZ);
+    }
+
+    public static EMGData readEMGData(Config config) throws IOException {
+        String path = config.emgPath();
+        if (path.endsWith(".emt")) {
+            EmtFileHandler.convert(path);
+            path = path.replace(".emt", ".csv");
+        }
+
+        List<String> emgLabels = new ArrayList<>();
+        List<List<Double>> emgColumns = new ArrayList<>();
+
+        try (BufferedReader br = new BufferedReader(new FileReader(path))) {
+            String line;
+            boolean isFirstLine = true;
+
+            while ((line = br.readLine()) != null) {
+                if (isFirstLine) {
+                    isFirstLine = false;
+                    String[] headers = line.split(",");
+
+                    for (int i = 2; i < headers.length; i++) {
+                        emgLabels.add(headers[i].trim());
+                        emgColumns.add(new ArrayList<>());
+                    }
+                    continue;
+                }
+
+                String[] values = line.split(",");
+
+                for (int i = 0; i < emgLabels.size(); i++) {
+                    emgColumns.get(i).add(Double.parseDouble(values[i].trim()));
+                }
+            }
+        }
+
+        return new EMGData(emgLabels, emgColumns);
     }
 
     private static int addEntriesSimple(int[] offsets, List<Double> X, List<Double> Y, List<Double> Z, String[] line) {

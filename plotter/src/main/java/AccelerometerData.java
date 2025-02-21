@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-public class Data {
+public class AccelerometerData {
     public enum Axis {
         X, Y, Z, MAGNITUDE
     }
@@ -42,9 +42,9 @@ public class Data {
     private List<Double> accMagnitude;
     private List<Double> angVelMagnitude;
 
-    public Data(List<Double> accX, List<Double> accY, List<Double> accZ,
-                List<Double> angX, List<Double> angY, List<Double> angZ,
-                List<Double> angVelX, List<Double> angVelY, List<Double> angVelZ) {
+    public AccelerometerData(List<Double> accX, List<Double> accY, List<Double> accZ,
+                             List<Double> angX, List<Double> angY, List<Double> angZ,
+                             List<Double> angVelX, List<Double> angVelY, List<Double> angVelZ) {
 
         if (accX.size() != accY.size() ||
         accX.size() != accZ.size() ||
