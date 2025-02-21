@@ -4,7 +4,6 @@ import enums.Side;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class Main {
@@ -129,7 +128,7 @@ public class Main {
             //ConfigGUI gui = new ConfigGUI();
             Config config = pagCentro1;
             boolean filtered = true;
-            Data data = CSVInterpeter.read_dataset(config, true);
+            Data data = CSVInterpeter.readAccelerometerData(config, true);
 
             if (config.free())
                 data.makeFree();
@@ -160,33 +159,7 @@ public class Main {
 
             List<PaddleEvent> events = EventIdentifier.getPaddlingEvents(data.getFreeAngVelZ(), 1, -10, 10);
 
-            XYSeriesCollection eventCollection = new XYSeriesCollection();
-            XYSeries leftHits = new XYSeries("Left Hits");
-            XYSeries rightHits = new XYSeries("Right Hits");
-            XYSeries leftLeaves = new XYSeries("Left Leaves");
-            XYSeries rightLeaves = new XYSeries("Right Leaves");
-            double i, value;
-            for (PaddleEvent event : events) {
-                i = event.frame();
-                value = data.getFreeAngVelZ().get(event.frame());
-                if (event.side() == Side.RIGHT) {
-                    if (event.type() == PaddleType.HIT)
-                        rightHits.add(i, value);
-                    else
-                        rightLeaves.add(i, value);
-                }
-                else {
-                    if (event.type() == PaddleType.HIT)
-                        leftHits.add(i, value);
-                    else
-                        leftLeaves.add(i, value);
-                }
-            }
-
-            eventCollection.addSeries(leftHits);
-            eventCollection.addSeries(rightHits);
-            eventCollection.addSeries(leftLeaves);
-            eventCollection.addSeries(rightLeaves);
+            XYSeriesCollection eventCollection = makeEventCollection(events, data);
 
             GeneralPlotter plotter = new GeneralPlotter("Plot", "Frame", "Ampl", dataset[1], eventCollection);
 
@@ -196,11 +169,34 @@ public class Main {
         }
     }
 
-    private static XYSeries constant(String key, int length, double value) {
-        XYSeries constant = new XYSeries(key);
-        for(int i = 0; i < length; i++) {
-            constant.add(i, value);
+    private static XYSeriesCollection makeEventCollection(List<PaddleEvent> events, Data data) {
+        XYSeriesCollection eventCollection = new XYSeriesCollection();
+        XYSeries leftHits = new XYSeries("Left Hits");
+        XYSeries rightHits = new XYSeries("Right Hits");
+        XYSeries leftLeaves = new XYSeries("Left Leaves");
+        XYSeries rightLeaves = new XYSeries("Right Leaves");
+        double i, value;
+        for (PaddleEvent event : events) {
+            i = event.frame();
+            value = data.getFreeAngVelZ().get(event.frame());
+            if (event.side() == Side.RIGHT) {
+                if (event.type() == PaddleType.HIT)
+                    rightHits.add(i, value);
+                else
+                    rightLeaves.add(i, value);
+            }
+            else {
+                if (event.type() == PaddleType.HIT)
+                    leftHits.add(i, value);
+                else
+                    leftLeaves.add(i, value);
+            }
         }
-        return constant;
+
+        eventCollection.addSeries(leftHits);
+        eventCollection.addSeries(rightHits);
+        eventCollection.addSeries(leftLeaves);
+        eventCollection.addSeries(rightLeaves);
+        return eventCollection;
     }
 }

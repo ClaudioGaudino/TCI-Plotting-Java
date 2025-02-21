@@ -140,7 +140,7 @@ public class ConfigGUI extends JFrame {
 
                 try {
                     boolean filtered = true;
-                    Data data = CSVInterpeter.read_dataset(config, true);
+                    Data data = CSVInterpeter.readAccelerometerData(config, true);
 
                     if (config.free())
                         data.makeFree();

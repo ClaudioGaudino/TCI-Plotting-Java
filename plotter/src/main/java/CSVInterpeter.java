@@ -1,4 +1,3 @@
-import com.github.psambit9791.jdsp.filter.Butterworth;
 import com.opencsv.CSVWriter;
 import com.opencsv.exceptions.CsvValidationException;
 import org.jfree.data.xy.XYSeries;
@@ -8,11 +7,8 @@ import org.jfree.data.xy.XYSeriesCollection;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.lang.reflect.Array;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class CSVInterpeter {
     private static final double G = 9.80665;
@@ -73,7 +69,7 @@ public class CSVInterpeter {
         }
     }
 
-    public static Data read_dataset(Config config, boolean filtered) throws IOException, CsvValidationException {
+    public static Data readAccelerometerData(Config config, boolean filtered) throws IOException, CsvValidationException {
         XYSeriesCollection datasetAcc = new XYSeriesCollection();
         XYSeriesCollection datasetAngVel = new XYSeriesCollection();
 
