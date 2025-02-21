@@ -1,6 +1,11 @@
 import com.github.psambit9791.jdsp.filter.Butterworth;
+import enums.PaddleType;
+import enums.Side;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class Main {
     public static void main(String[] args) {
@@ -153,7 +158,39 @@ public class Main {
 
             XYSeriesCollection[] dataset = data.getDataset(config);
 
-            AccelerometerPlot p = new AccelerometerPlot(dataset[0], dataset[1]);
+            List<PaddleEvent> events = EventIdentifier.getPaddlingEvents(data.getFreeAngVelZ(), 1, -10, 10);
+
+            XYSeriesCollection eventCollection = new XYSeriesCollection();
+            XYSeries leftHits = new XYSeries("Left Hits");
+            XYSeries rightHits = new XYSeries("Right Hits");
+            XYSeries leftLeaves = new XYSeries("Left Leaves");
+            XYSeries rightLeaves = new XYSeries("Right Leaves");
+            double i, value;
+            for (PaddleEvent event : events) {
+                i = event.frame();
+                value = data.getFreeAngVelZ().get(event.frame());
+                if (event.side() == Side.RIGHT) {
+                    if (event.type() == PaddleType.HIT)
+                        rightHits.add(i, value);
+                    else
+                        rightLeaves.add(i, value);
+                }
+                else {
+                    if (event.type() == PaddleType.HIT)
+                        leftHits.add(i, value);
+                    else
+                        leftLeaves.add(i, value);
+                }
+            }
+
+            eventCollection.addSeries(leftHits);
+            eventCollection.addSeries(rightHits);
+            eventCollection.addSeries(leftLeaves);
+            eventCollection.addSeries(rightLeaves);
+
+            GeneralPlotter plotter = new GeneralPlotter("Plot", "Frame", "Ampl", dataset[1], eventCollection);
+
+
         } catch (Exception e) {
             e.printStackTrace();
         }

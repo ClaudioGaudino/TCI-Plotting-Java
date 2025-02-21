@@ -1,4 +1,7 @@
+import enums.PaddleType;
+import enums.Side;
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
+import org.jfree.chart.ui.LengthAdjustmentType;
 import org.jfree.data.general.SeriesException;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
@@ -37,7 +40,8 @@ public class EventIdentifier {
         //return getContactEvents(accSeries, angSeries, doAcc, 14, 13, 1, 17, 7);
         //return getContactEventsV2(accSeries, angSeries, doAcc, 14, 1, 17, 7);
         //return getPredetermined(accSeries, angSeries, doAcc, true);
-        return getPaddlingEvents(angSeries, 1, -1.5, 1.5);
+        //return getPaddlingEvents(angSeries, 1, -1.5, 1.5);
+        return null;
     }
 
     //-- ROWING FUNCTIONS --//
@@ -58,9 +62,11 @@ public class EventIdentifier {
      * 2 - right hits
      * 3 - right leaves
      */
-    public static List<List<DataPair<Integer, Double>>> getPaddlingEvents(List<Double> zAngVel, int window, double lowerThreshold, double upperThreshold) {
+    public static List<PaddleEvent> getPaddlingEvents(List<Double> zAngVel, int window, double lowerThreshold, double upperThreshold) {
         if (lowerThreshold > upperThreshold)
             throw new IllegalArgumentException();
+
+        List<PaddleEvent> events = new ArrayList<>();
 
         List<DataPair<Integer, Double>> leftHit = new ArrayList<>();
         List<DataPair<Integer, Double>> leftLeave = new ArrayList<>();
@@ -94,10 +100,12 @@ public class EventIdentifier {
             if (inLeftZone) {
                 if (justEntered) {
                     if (tmpHit != 0)
-                        rightHit.add(new DataPair<>(tmpHit, zAngVel.get(tmpLeave)));
+                        events.add(new PaddleEvent(PaddleType.HIT, Side.RIGHT, tmpHit));
+                        //rightHit.add(new DataPair<>(tmpHit, zAngVel.get(tmpLeave)));
                     tmpHit = 0;
                     if (tmpLeave != 0)
-                        rightLeave.add(new DataPair<>(tmpLeave, zAngVel.get(tmpLeave)));
+                        events.add(new PaddleEvent(PaddleType.LEAVE, Side.RIGHT, tmpLeave));
+                        //rightLeave.add(new DataPair<>(tmpLeave, zAngVel.get(tmpLeave)));
                     tmpLeave = 0;
                     justEntered = false;
                 }
@@ -115,7 +123,8 @@ public class EventIdentifier {
                 if (foundValley) {
                     if (tmpHit == 0) {
                         tmpHit = i;
-                        leftHit.add(new DataPair<>(i, zAngVel.get(i)));
+                        events.add(new PaddleEvent(PaddleType.HIT, Side.LEFT, i));
+                        //leftHit.add(new DataPair<>(i, zAngVel.get(i)));
                     } else {
                         tmpLeave = i;
                     }
@@ -123,10 +132,12 @@ public class EventIdentifier {
             } else if (inRightZone) {
                 if (justEntered) {
                     if (tmpHit != 0)
-                        leftHit.add(new DataPair<>(tmpHit, zAngVel.get(tmpLeave)));
+                        events.add(new PaddleEvent(PaddleType.HIT, Side.LEFT, tmpHit));
+                        //leftHit.add(new DataPair<>(tmpHit, zAngVel.get(tmpLeave)));
                     tmpHit = 0;
                     if (tmpLeave != 0)
-                        leftLeave.add(new DataPair<>(tmpLeave, zAngVel.get(tmpLeave)));
+                        events.add(new PaddleEvent(PaddleType.LEAVE, Side.LEFT, tmpLeave));
+                        //leftLeave.add(new DataPair<>(tmpLeave, zAngVel.get(tmpLeave)));
                     tmpLeave = 0;
                     justEntered = false;
                 }
@@ -144,7 +155,8 @@ public class EventIdentifier {
                 if (foundPeak) {
                     if (tmpHit == 0) {
                         tmpHit = i;
-                        rightHit.add(new DataPair<>(i, zAngVel.get(i)));
+                        events.add(new PaddleEvent(PaddleType.HIT, Side.RIGHT, i));
+                        //rightHit.add(new DataPair<>(i, zAngVel.get(i)));
                     } else {
                         tmpLeave = i;
                     }
@@ -152,9 +164,11 @@ public class EventIdentifier {
             } else {
                 if (tmpLeave != 0) {
                     if (zAngVel.get(tmpLeave) < 0)
-                        leftLeave.add(new DataPair<>(tmpLeave, zAngVel.get(tmpLeave)));
+                        events.add(new PaddleEvent(PaddleType.LEAVE, Side.LEFT, tmpLeave));
+                        //leftLeave.add(new DataPair<>(tmpLeave, zAngVel.get(tmpLeave)));
                     else
-                        rightLeave.add(new DataPair<>(tmpLeave, zAngVel.get(tmpLeave)));
+                        events.add(new PaddleEvent(PaddleType.LEAVE, Side.RIGHT, tmpLeave));
+                        //rightLeave.add(new DataPair<>(tmpLeave, zAngVel.get(tmpLeave)));
                     tmpLeave = 0;
                 }
             }
@@ -166,7 +180,7 @@ public class EventIdentifier {
         out.add(rightHit);
         out.add(rightLeave);
 
-        return out;
+        return events;
     }
 
 

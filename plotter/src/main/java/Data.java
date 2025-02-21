@@ -196,12 +196,7 @@ public class Data {
 
             for (int frame = 0; frame < size; frame++) {
                 if (config.plotX()) {
-                    if (config.free()) {
-                        accXSeries.add(frame, localAccX.get(frame));
-                    } else {
-                        accXSeries.add(frame, localAccX.get(frame));
-                    }
-
+                    accXSeries.add(frame, localAccX.get(frame));
                 }
                 if (config.plotY()) {
                     accYSeries.add(frame, localAccY.get(frame));
@@ -243,12 +238,7 @@ public class Data {
 
             for (int frame = 0; frame < size; frame++) {
                 if (config.plotX()) {
-                    if (config.free()) {
-                        angVelXSeries.add(frame, localAngVelX.get(frame));
-                    } else {
-                        angVelXSeries.add(frame, localAngVelZ.get(frame));
-                    }
-
+                    angVelXSeries.add(frame, localAngVelX.get(frame));
                 }
                 if (config.plotY()) {
                     angVelYSeries.add(frame, localAngVelY.get(frame));

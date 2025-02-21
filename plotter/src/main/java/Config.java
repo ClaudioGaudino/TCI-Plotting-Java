@@ -11,6 +11,5 @@ public record Config (
         String accIndexCol, String angIndexCol, String angVelIndexCol,
         boolean useAccMagnitude, boolean useAngVelMagnitude,
         boolean free,
-        boolean plotX, boolean plotY, boolean plotZ) {
-
-}
+        boolean plotX, boolean plotY, boolean plotZ
+) { }
