@@ -330,7 +330,7 @@ public class CSVInterpeter {
                     isFirstLine = false;
                     String[] headers = line.split(",");
 
-                    for (int i = 2; i < headers.length; i++) {
+                    for (int i = 0; i < headers.length; i++) {
                         emgLabels.add(headers[i].trim());
                         emgColumns.add(new ArrayList<>());
                     }
