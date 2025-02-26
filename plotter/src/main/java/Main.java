@@ -4,6 +4,7 @@ import enums.Side;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class Main {
@@ -126,7 +127,6 @@ public class Main {
         );
 
         try {
-            //ConfigGUI gui = new ConfigGUI();
             Config config = pagCentro1;
             boolean filtered = true;
             AccelerometerData accelerometerData = CSVInterpeter.readAccelerometerData(config, true);
@@ -159,10 +159,15 @@ public class Main {
             XYSeriesCollection[] dataset = accelerometerData.getDataset(config);
 
             List<PaddleEvent> events = EventIdentifier.getPaddlingEvents(accelerometerData.getFreeAngVelZ(), 1, -10, 10);
+            List<DataPair<Double, Double>> separators = new ArrayList<>();
+
+            for (int i = 0; i < events.size() - 1; i += 2) {
+                separators.add(new DataPair<>((double) events.get(i).frame(), (double) events.get(i + 1).frame()));
+            }
 
             XYSeriesCollection eventCollection = makeEventCollection(events, accelerometerData);
 
-            GeneralPlotter plotter = new GeneralPlotter("Plot", "Frame", "Ampl", dataset[1], eventCollection);
+            GeneralPlotter plotter = new GeneralPlotter("Plot", "Frame", "Ampl", dataset[1], eventCollection, separators);
 
             EMGData emgData = CSVInterpeter.readEMGData(config);
             emgData.filter();
@@ -178,7 +183,12 @@ public class Main {
                 emgSignals.addSeries(tmp);
             }
 
-            GeneralPlotter emgPlotter = new GeneralPlotter("Emg", "Frame", "Ampl", emgSignals, null);
+            List<DataPair<Double, Double>> separatorsEMG = new ArrayList<>();
+            for (DataPair<Double, Double> sep : separators) {
+                separatorsEMG.add(new DataPair<>(sep.a() * 10, sep.b() * 10));
+            }
+
+            GeneralPlotter emgPlotter = new GeneralPlotter("Emg", "Frame", "Ampl", emgSignals, null, separatorsEMG);
 
 
         } catch (Exception e) {
