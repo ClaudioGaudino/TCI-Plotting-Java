@@ -1,8 +1,6 @@
-import jdk.jfr.Event;
 import org.jfree.chart.*;
 import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.axis.ValueAxis;
-import org.jfree.chart.event.*;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.xy.XYItemRenderer;
 import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
@@ -11,9 +9,6 @@ import org.jfree.data.xy.XYSeriesCollection;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -42,7 +37,7 @@ public class AccelerometerPlot extends JFrame {
             ang.add((Double) angSeries.getY(i));
         }
 
-        List<List<DataPair<Integer, Double>>> accContacts = EventiIdentifierOld.getContactEvents(acc, ang, true);
+        List<List<DataPair<Integer, Double>>> accContacts = EventIdentifierOld.getContactEvents(acc, ang, true);
         XYSeries[] accContactsSeries = {new XYSeries("Left hit"), new XYSeries("Left Leave"), new XYSeries("Right Hit"), new XYSeries("Right Leave")};
         DataPair<Integer, Double> tmp;
         for(int i = 0; i < 4; i++) {
@@ -60,7 +55,7 @@ public class AccelerometerPlot extends JFrame {
         plotSetup(xyPlotAcc, accContactsCollection, datasetAcc);
 
         //XYSeries[] angContacts = EventIdentifier.getContactEvents(datasetAcc.getSeries(0), datasetAngVel.getSeries(0), false);
-        List<List<DataPair<Integer, Double>>> angContacts = EventiIdentifierOld.getContactEvents(acc, ang, false);
+        List<List<DataPair<Integer, Double>>> angContacts = EventIdentifierOld.getContactEvents(acc, ang, false);
         XYSeries[] angContactsSeries = {new XYSeries("Left hit"), new XYSeries("Left Leave"), new XYSeries("Right Hit"), new XYSeries("Right Leave")};
         for(int i = 0; i < 4; i++) {
             for(int j = 0; j < angContacts.get(i).size(); j++) {

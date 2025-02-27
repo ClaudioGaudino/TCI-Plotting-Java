@@ -6,7 +6,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 
-public class EventiIdentifierOld {
+public class EventIdentifierOld {
     private enum StepSide {
         LEFT, RIGHT, UNKNOWN
     }
