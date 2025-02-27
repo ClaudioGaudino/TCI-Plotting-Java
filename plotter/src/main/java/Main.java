@@ -4,6 +4,8 @@ import enums.Side;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 
+import javax.xml.crypto.Data;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -126,9 +128,23 @@ public class Main {
                 false, false, true, ""
         );
 
+        Config corsa3 = new Config(
+                true,
+                "",
+                "data\\corsa3\\Accelerazioni.emt", "data\\corsa3\\Angoli.emt", "data\\corsa3\\Velocità angolari.emt",
+                "GSensor.X", "GSensor.Y", "GSensor.Z",
+                "GSensor.X", "GSensor.Y", "GSensor.Z",
+                "GSensor.X", "GSensor.Y", "GSensor.Z",
+                "Frame",
+                "","","",
+                true, false, true,
+                false, false, true, "data\\corsa3\\Segnali EMG.emt"
+        );
+
         try {
-            Config config = pagCentro1;
+            Config config = corsa3;
             boolean filtered = true;
+            boolean doRunningInstead = true;
             AccelerometerData accelerometerData = CSVInterpeter.readAccelerometerData(config, true);
 
             if (config.free())
@@ -156,44 +172,89 @@ public class Main {
                 }
             }
 
-            XYSeriesCollection[] dataset = accelerometerData.getDataset(config);
-
-            List<PaddleEvent> events = EventIdentifier.getPaddlingEvents(accelerometerData.getFreeAngVelZ(), 1, -10, 10);
-            List<DataPair<Double, Double>> separators = new ArrayList<>();
-
-            for (int i = 0; i < events.size() - 1; i += 2) {
-                separators.add(new DataPair<>((double) events.get(i).frame(), (double) events.get(i + 1).frame()));
+            if (doRunningInstead) {
+                doRunning(config, accelerometerData);
+            } else {
+                doPaddling(config, accelerometerData);
             }
-
-            XYSeriesCollection eventCollection = makeEventCollection(events, accelerometerData);
-
-            GeneralPlotter plotter = new GeneralPlotter("Plot", "Frame", "Ampl", dataset[1], eventCollection, separators);
-
-            EMGData emgData = CSVInterpeter.readEMGData(config);
-            emgData.filter();
-
-            XYSeriesCollection emgSignals = new XYSeriesCollection();
-            for (int i = 2; i < emgData.getSignals().size(); i++) {
-                XYSeries tmp = new XYSeries(emgData.getHeaders().get(i));
-
-                for (double frame : emgData.getSignals().get(0)) {
-                    tmp.add(frame, emgData.getFilteredSignals().get(i).get((int) frame));
-                }
-
-                emgSignals.addSeries(tmp);
-            }
-
-            List<DataPair<Double, Double>> separatorsEMG = new ArrayList<>();
-            for (DataPair<Double, Double> sep : separators) {
-                separatorsEMG.add(new DataPair<>(sep.a() * 10, sep.b() * 10));
-            }
-
-            GeneralPlotter emgPlotter = new GeneralPlotter("Emg", "Frame", "Ampl", emgSignals, null, separatorsEMG);
-
 
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    private static void doPaddling(Config config, AccelerometerData accelerometerData) throws IOException {
+        XYSeriesCollection[] dataset = accelerometerData.getDataset(config);
+
+        List<PaddleEvent> events = EventIdentifier.getPaddlingEvents(accelerometerData.getFreeAngVelZ(), 1, -10, 10);
+        List<DataPair<Double, Double>> separators = new ArrayList<>();
+
+        for (int i = 0; i < events.size() - 1; i += 2) {
+            separators.add(new DataPair<>((double) events.get(i).frame(), (double) events.get(i + 1).frame()));
+        }
+
+        XYSeriesCollection eventCollection = makeEventCollection(events, accelerometerData);
+
+        GeneralPlotter plotter = new GeneralPlotter("Plot", "Frame", "Ampl", dataset[1], eventCollection, separators);
+
+        EMGData emgData = CSVInterpeter.readEMGData(config);
+        emgData.filter();
+
+        XYSeriesCollection emgSignals = new XYSeriesCollection();
+        for (int i = 2; i < emgData.getSignals().size(); i++) {
+            XYSeries tmp = new XYSeries(emgData.getHeaders().get(i));
+
+            for (double frame : emgData.getSignals().get(0)) {
+                tmp.add(frame, emgData.getFilteredSignals().get(i).get((int) frame));
+            }
+
+            emgSignals.addSeries(tmp);
+        }
+
+        List<DataPair<Double, Double>> separatorsEMG = new ArrayList<>();
+        for (DataPair<Double, Double> sep : separators) {
+            separatorsEMG.add(new DataPair<>(sep.a() * 10, sep.b() * 10));
+        }
+
+        GeneralPlotter emgPlotter = new GeneralPlotter("Emg", "Frame", "Ampl", emgSignals, null, separatorsEMG);
+    }
+
+    private static void doRunning(Config config, AccelerometerData accelerometerData) throws IOException {
+        XYSeriesCollection[] dataset = accelerometerData.getDataset(config);
+
+        List<RunEvent> events = EventIdentifier.getRunningEvents(dataset[0].getSeries(0), dataset[1].getSeries(0), true, 14, 1, 17, 7);
+        List<DataPair<Double, Double>> separators = new ArrayList<>();
+
+        for (int i = 0; i < events.size() - 1; i += 2) {
+            separators.add(new DataPair<>((double) events.get(i).getFrame(), (double) events.get(i + 1).getFrame()));
+        }
+
+        XYSeriesCollection eventCollection = makeRunEventCollection(events);
+
+        GeneralPlotter plotterAcc = new GeneralPlotter("Plot", "Frame", "Ampl", dataset[0], eventCollection, separators);
+        GeneralPlotter plotterAng = new GeneralPlotter("Plot", "Frame", "Ampl", dataset[1], eventCollection, separators);
+
+        EMGData emgData = CSVInterpeter.readEMGData(config);
+        emgData.filter();
+
+        XYSeriesCollection emgSignals = new XYSeriesCollection();
+        for (int i = 2; i < emgData.getSignals().size(); i++) {
+            XYSeries tmp = new XYSeries(emgData.getHeaders().get(i));
+
+            for (double frame : emgData.getSignals().get(0)) {
+                tmp.add(frame, emgData.getFilteredSignals().get(i).get((int) frame));
+            }
+
+            emgSignals.addSeries(tmp);
+        }
+
+        List<DataPair<Double, Double>> separatorsEMG = new ArrayList<>();
+        for (DataPair<Double, Double> sep : separators) {
+            separatorsEMG.add(new DataPair<>(sep.a() * 10, sep.b() * 10));
+        }
+
+        GeneralPlotter emgPlotter = new GeneralPlotter("Emg", "Frame", "Ampl", emgSignals, null, separatorsEMG);
+
     }
 
     private static XYSeriesCollection makeEventCollection(List<PaddleEvent> events, AccelerometerData data) {
@@ -226,6 +287,51 @@ public class Main {
         eventCollection.addSeries(rightHits);
         eventCollection.addSeries(leftLeaves);
         eventCollection.addSeries(rightLeaves);
+        return eventCollection;
+    }
+
+    private static XYSeriesCollection makeRunEventCollection(List<RunEvent> events) {
+        XYSeriesCollection eventCollection = new XYSeriesCollection();
+        XYSeries leftContacts = new XYSeries("Left Contacts");
+        XYSeries rightContacts = new XYSeries("Right Contacts");
+        XYSeries leftLifts = new XYSeries("Left Lifts");
+        XYSeries rightLifts = new XYSeries("Right Lifts");
+        XYSeries unknownContacts = new XYSeries("Unknown Contacts");
+        XYSeries unknownLifts = new XYSeries("Unknown Lifts");
+
+        for (RunEvent event : events) {
+            switch (event.getSide()) {
+                case Left -> {
+                    if (event.getType() == RunEvent.Type.Contact)
+                        leftContacts.add(event.getFrame(), event.getValue());
+                    else
+                        leftLifts.add(event.getFrame(), event.getValue());
+                    break;
+                }
+                case Right -> {
+                    if (event.getType() == RunEvent.Type.Contact)
+                        rightContacts.add(event.getFrame(), event.getValue());
+                    else
+                        rightLifts.add(event.getFrame(), event.getValue());
+                    break;
+                }
+                case Unknown -> {
+                    if (event.getType() == RunEvent.Type.Contact)
+                        unknownContacts.add(event.getFrame(), event.getValue());
+                    else
+                        unknownLifts.add(event.getFrame(), event.getValue());
+                    break;
+                }
+            }
+        }
+
+        eventCollection.addSeries(leftContacts);
+        eventCollection.addSeries(rightContacts);
+        eventCollection.addSeries(leftLifts);
+        eventCollection.addSeries(rightLifts);
+        eventCollection.addSeries(unknownContacts);
+        eventCollection.addSeries(unknownLifts);
+
         return eventCollection;
     }
 }

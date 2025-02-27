@@ -315,7 +315,7 @@ public class GeneralPlotter extends JFrame {
     }
 
     private XYSeries sliceSeries(double start, double end, XYSeries series) {
-        if (start < 0 || end >= series.getMaxX())
+        if (start < 0)
             throw new IllegalArgumentException("Splice values (" + start + ", " + end + ") out of bounds for series " + series.getKey() + " (" + series.getMaxX() + " max X)");
 
         XYSeries slice = new XYSeries(series.getKey());
