@@ -1,0 +1,122 @@
+import enums.Side;
+import org.apache.commons.math3.analysis.interpolation.SplineInterpolator;
+import org.apache.commons.math3.analysis.polynomials.PolynomialSplineFunction;
+
+import java.util.List;
+
+public class DataProcessor {
+
+    public static double[][][] spliceAndResampleEMG(List<List<Double>> signals, List<DataPair<Double, Double>> separators, int spliceSize) {
+        int size = signals.get(2).size();
+        for (int i = 2; i < signals.size(); i++) {
+            if (signals.get(i).size() != size)
+                throw new IllegalArgumentException("Signals do not have equal lengths!");
+        }
+
+        //the first two signals are frame and time (null if using filtered)
+        double[][][] splices = new double[separators.size()][signals.size() - 2][spliceSize];
+
+        for (int i = 0; i < separators.size(); i ++) {
+            //j starts at 2 to skip frame and time columns
+            for (int j = 2; j < signals.size(); j++) {
+                spliceAndResampleSingle(splices[i][j - 2], signals.get(j), separators.get(i), spliceSize);
+            }
+        }
+
+        return splices;
+    }
+
+    public static double[][][] joinSidesAndNormalizeEMG(double[][][] splices, Side initialSide) {
+        int rightSlices = 0, leftSlices = 0;
+        if (splices.length % 2 == 0) {
+            rightSlices = splices.length / 2;
+            leftSlices = rightSlices;
+        } else {
+            switch (initialSide) {
+                case LEFT -> {
+                    leftSlices = ((splices.length - 1) / 2) + 1;
+                    rightSlices = (splices.length - 1) / 2;
+                }
+                case RIGHT -> {
+                    rightSlices = ((splices.length - 1) / 2) + 1;
+                    leftSlices = (splices.length - 1) / 2;
+                }
+                case UNKNOWN -> {
+                    throw new IllegalArgumentException("Initial side may not be unknown!");
+                }
+            }
+        }
+
+
+
+        double[][][] normalized = new double[2][splices[0].length][splices[0][0].length];
+        int is = (initialSide == Side.LEFT) ? 0 : 1;
+        double[] max = new double[splices[0].length];
+
+        normalizeSide(splices, is, max);
+
+        normalizeSide(splices, 1 - is, max);
+
+        int s = is;
+        for (int i = 0; i < splices.length; i ++, s = 1 - s) {
+            for (int j = 0; j < splices[i].length; j++) {
+                for (int k = 0; k < splices[i][j].length; k++) {
+                    normalized[s][j][k] += splices[i][j][k];
+                }
+            }
+        }
+
+        for (int i = 0; i < normalized.length; i ++) {
+            for (int j = 0; j < splices[i].length; j++) {
+                for (int k = 0; k < splices[i][j].length; k++) {
+                    normalized[i][j][k] /= (i == is) ? leftSlices : rightSlices;
+                }
+            }
+        }
+
+        return normalized;
+    }
+
+    private static void normalizeSide(double[][][] splices, int s, double[] max) {
+        for (int i = 0; i < max.length; i++) {
+            max[i] = splices[s][i][0];
+        }
+
+        for (int i = s; i < splices.length; i += 2) {
+            for (int j = 0; j < splices[i].length; j++) {
+                for (int k = 0; k < splices[i][j].length; k++) {
+                    if (splices[i][j][k] > max[j]) {
+                        max[j] = splices[i][j][k];
+                    }
+                }
+            }
+        }
+
+        for (int i = s; i < splices.length; i += 2) {
+            for (int j = 0; j < splices[i].length; j++) {
+                for (int k = 0; k < splices[i][j].length; k++) {
+                    splices[i][j][k] = splices[i][j][k] / max[j];
+                }
+            }
+        }
+    }
+
+    private static void spliceAndResampleSingle(double[] destination, List<Double> signal, DataPair<Double, Double> separator, int spliceSize) {
+        if (destination.length != spliceSize)
+            throw new IllegalArgumentException("Destination array is not the same length as splice size!");
+
+        double[] time = new double[signal.size()];
+        for (int i = 0; i < time.length; i++)
+            time[i] = i;
+
+        SplineInterpolator interpolator = new SplineInterpolator();
+        PolynomialSplineFunction spline = interpolator.interpolate(time, signal.stream().mapToDouble(Double::doubleValue).toArray());
+        double step = (separator.b() - separator.a()) / (spliceSize - 1);
+
+        for (int i = 0; i < spliceSize; i++) {
+            destination[i] = spline.value(separator.a() + i * step);
+        }
+    }
+
+
+}

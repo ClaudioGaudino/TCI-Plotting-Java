@@ -21,11 +21,12 @@ public class GeneralPlotter extends JFrame {
     private XYSeriesCollection pointSets;
     private List<DataPair<Double, Double>> slices;
     private List<Double> separators;
+    private DataPair<Double, Double> yRange;
     private ChartPanel chartPanel;
 
     private int signalsIndex, pointsIndex, sliceIndex;
 
-    public GeneralPlotter(String title, String xLabel, String yLabel, XYSeriesCollection signals, XYSeriesCollection pointSets, List<DataPair<Double, Double>> slices) {
+    public GeneralPlotter(String title, String xLabel, String yLabel, XYSeriesCollection signals, XYSeriesCollection pointSets, List<DataPair<Double, Double>> slices, DataPair<Double, Double> yRange) {
         super(title);
 
         this.title = title;
@@ -35,6 +36,7 @@ public class GeneralPlotter extends JFrame {
         this.signals = signals;
         this.pointSets = pointSets;
         this.slices = slices;
+        this.yRange = yRange;
 
         signalsIndex = signals == null ? 0 : signals.getSeriesCount();
         pointsIndex = pointSets == null ? 0 : pointSets.getSeriesCount();
@@ -224,6 +226,10 @@ public class GeneralPlotter extends JFrame {
             ValueAxis lineX = new NumberAxis(xLabel);
             ValueAxis lineY = new NumberAxis(yLabel);
 
+            if (yRange != null) {
+                lineY.setRange(yRange.a(), yRange.b());
+            }
+
             boolean first = true;
             XYSeries curr;
 
@@ -259,6 +265,10 @@ public class GeneralPlotter extends JFrame {
             XYItemRenderer scatterRenderer = new XYLineAndShapeRenderer(false, true);
             ValueAxis scatterX = new NumberAxis(xLabel);
             ValueAxis scatterY = new NumberAxis(yLabel);
+
+            if (yRange != null) {
+                scatterY.setRange(yRange.a(), yRange.b());
+            }
 
             boolean first = true;
             double minX = 0, maxX = 0;

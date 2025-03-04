@@ -19,11 +19,7 @@ public class EventIdentifier {
      * @param window how far back and ahead of a given point to check wether it is a peak or valley
      * @param lowerThreshold the threshold under which the data points are considered to be in the left underwater section
      * @param upperThreshold the threshold over which the data points are considered to be in the right underwater section
-     * @return a list of lists containing (in order):
-     * 0 - left hits
-     * 1 - left leaves
-     * 2 - right hits
-     * 3 - right leaves
+     * @return a list of events ordered chronologically
      */
     public static List<PaddleEvent> getPaddlingEvents(List<Double> zAngVel, int window, double lowerThreshold, double upperThreshold) {
         if (lowerThreshold > upperThreshold)
@@ -69,7 +65,7 @@ public class EventIdentifier {
                 }
 
                 foundValley = true;
-                for (int j = i - window; j <= i + window; j++) {
+                for (int j = i - window; j <= Math.min(i + window, zAngVel.size() - 1); j++) {
                     if (i == j) continue;
 
                     if (zAngVel.get(i) > zAngVel.get(j)) {
@@ -101,7 +97,7 @@ public class EventIdentifier {
                 }
 
                 foundPeak = true;
-                for (int j = i - window; j <= i + window; j++) {
+                for (int j = i - window; j <= Math.min(i + window, zAngVel.size() - 1); j++) {
                     if (i == j) continue;
 
                     if (zAngVel.get(i) < zAngVel.get(j)) {
@@ -114,7 +110,6 @@ public class EventIdentifier {
                     if (tmpHit == 0) {
                         tmpHit = i;
                         events.add(new PaddleEvent(PaddleType.HIT, Side.RIGHT, i));
-                        //rightHit.add(new DataPair<>(i, zAngVel.get(i)));
                     } else {
                         tmpLeave = i;
                     }
@@ -123,10 +118,8 @@ public class EventIdentifier {
                 if (tmpLeave != 0) {
                     if (zAngVel.get(tmpLeave) < 0)
                         events.add(new PaddleEvent(PaddleType.LEAVE, Side.LEFT, tmpLeave));
-                        //leftLeave.add(new DataPair<>(tmpLeave, zAngVel.get(tmpLeave)));
                     else
                         events.add(new PaddleEvent(PaddleType.LEAVE, Side.RIGHT, tmpLeave));
-                        //rightLeave.add(new DataPair<>(tmpLeave, zAngVel.get(tmpLeave)));
                     tmpLeave = 0;
                 }
             }
@@ -135,6 +128,92 @@ public class EventIdentifier {
         return events;
     }
 
+    public static List<PaddleEvent> getPaddlingEvents(List<Double> angVel, int window, double lowerThreshold, double upperThreshold, boolean useless) {
+        if (lowerThreshold > upperThreshold)
+            throw new IllegalArgumentException();
+
+        List<PaddleEvent> events = new ArrayList<>();
+
+        boolean inLeftZone = true, inRightZone = true, justEntered = false, eventPossible = false;
+        int tmpLeaveR = 0, tmpLeaveL = 0;
+        double curr;
+
+        for (int i = 1; i < angVel.size(); i++) {
+            curr = angVel.get(i);
+
+            if (angVel.get(i - 1) > lowerThreshold && curr <= lowerThreshold) {
+                if (inRightZone) {
+                    inLeftZone = true;
+                    justEntered = true;
+                    inRightZone = false;
+
+                    if (tmpLeaveR != 0) {
+                        events.add(new PaddleEvent(PaddleType.LEAVE, Side.RIGHT, tmpLeaveR));
+                        tmpLeaveR = 0;
+                    }
+                }
+            }
+
+            if (angVel.get(i - 1) < upperThreshold && curr >= upperThreshold) {
+                if (inLeftZone) {
+                    inRightZone = true;
+                    justEntered = true;
+                    inLeftZone = false;
+
+                    if (tmpLeaveL != 0) {
+                        events.add(new PaddleEvent(PaddleType.LEAVE, Side.LEFT, tmpLeaveL));
+                        tmpLeaveL = 0;
+                    }
+                }
+            }
+
+
+            if (inLeftZone) {
+                eventPossible = true;
+                for (int j = Math.max(i - window, 0); j <= Math.min(i + window, angVel.size() - 1); j++) {
+                    if (j == i) continue;
+
+                    if (curr > angVel.get(j)) {
+                        eventPossible = false;
+                        break;
+                    }
+                }
+
+                if (eventPossible) {
+                    if (justEntered) {
+                        events.add(new PaddleEvent(PaddleType.HIT, Side.LEFT, i));
+                        justEntered = false;
+                    } else {
+                        tmpLeaveL = i;
+                    }
+                }
+            }
+
+            if (inRightZone) {
+                eventPossible = true;
+                for (int j = Math.max(i - window, 0); j <= Math.min(i + window, angVel.size() - 1); j++) {
+                    if (j == i) continue;
+
+                    if (curr < angVel.get(j)) {
+                        eventPossible = false;
+                        break;
+                    }
+                }
+
+                if (eventPossible) {
+                    if (justEntered) {
+                        events.add(new PaddleEvent(PaddleType.HIT, Side.RIGHT, i));
+                        justEntered = false;
+                    } else {
+                        tmpLeaveR = i;
+                    }
+                }
+            }
+        }
+
+
+        return events;
+    }
 
     //-- RUNNING FUNCTIONS --//
 
