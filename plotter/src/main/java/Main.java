@@ -206,7 +206,7 @@ public class Main {
 
         XYSeriesCollection eventCollection = makeEventCollection(events, accelerometerData);
 
-        GeneralPlotter plotter = new GeneralPlotter("Plot", "Frame", "Ampl", dataset[1], eventCollection, separators, null);
+        GeneralPlotter plotter = new GeneralPlotter("Events", "Frame", "Ampl", dataset[1], eventCollection, separators, null);
 
         EMGData emgData = CSVInterpeter.readEMGData(config);
         emgData.filter();
