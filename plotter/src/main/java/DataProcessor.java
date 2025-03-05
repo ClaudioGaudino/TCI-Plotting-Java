@@ -51,11 +51,11 @@ public class DataProcessor {
 
         double[][][] normalized = new double[2][splices[0].length][splices[0][0].length];
         int is = (initialSide == Side.LEFT) ? 0 : 1;
-        double[] max = new double[splices[0].length];
 
-        normalizeSide(splices, is, max);
 
-        normalizeSide(splices, 1 - is, max);
+        normalizeSide(splices, is);
+
+        normalizeSide(splices, 1 - is);
 
         int s = is;
         for (int i = 0; i < splices.length; i ++, s = 1 - s) {
@@ -77,7 +77,9 @@ public class DataProcessor {
         return normalized;
     }
 
-    private static void normalizeSide(double[][][] splices, int s, double[] max) {
+    private static void normalizeSide(double[][][] splices, int s) {
+        double[] max = new double[splices[0].length];
+
         for (int i = 0; i < max.length; i++) {
             max[i] = splices[s][i][0];
         }

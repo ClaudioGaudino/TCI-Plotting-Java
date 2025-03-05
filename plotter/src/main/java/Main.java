@@ -140,8 +140,22 @@ public class Main {
                 false, false, true, "data\\corsa3\\Segnali EMG.emt"
         );
 
+        Config pagCentro2 = new Config(
+                true,
+                "",
+                "data\\pagaiata\\centro2\\Acc_pagaiata.emt", "data\\pagaiata\\centro2\\Angoli_pagaiata.emt", "data\\pagaiata\\centro2\\Vel_Ang_pagaiata.emt",
+                "GSensor.X", "GSensor.Y", "GSensor.Z",
+                "GSensor.X", "GSensor.Y", "GSensor.Z",
+                "GSensor.X", "GSensor.Y", "GSensor.Z",
+                "Frame",
+                "", "", "",
+                false, false,
+                true,
+                false, false, true, "data\\pagaiata\\centro2\\EMG_pagaiata.emt"
+        );
+
         try {
-            Config config = pagCentro1;
+            Config config = pagCentro2;
             boolean filtered = true;
             boolean doRunningInstead = false;
             AccelerometerData accelerometerData = CSVInterpeter.readAccelerometerData(config, true);
@@ -186,7 +200,7 @@ public class Main {
         XYSeriesCollection[] dataset = accelerometerData.getDataset(config);
 
         //GETTING EVENTS
-        List<PaddleEvent> events = EventIdentifier.getPaddlingEvents(accelerometerData.getFreeAngVelZ(), 1, -10, 10, false);
+        List<PaddleEvent> events = EventIdentifier.getPaddlingEvents(accelerometerData.getFreeAngVelZ(), 1, -40, 40, false);
         List<DataPair<Double, Double>> separators = new ArrayList<>();
         Side initialSide;
         //remove possible false positive events like a starting leave or ending hit
@@ -224,8 +238,11 @@ public class Main {
 
         List<DataPair<Double, Double>> separatorsEMG = new ArrayList<>();
         for (DataPair<Double, Double> sep : separators) {
-            //separatorsEMG.add(new DataPair<>(sep.a() * 10, sep.b() * 10));
-            separatorsEMG.add(sep);
+            if (emgData.getFilteredSignals().get(2).size() < sep.b() * 10)
+                break;
+
+            separatorsEMG.add(new DataPair<>(sep.a() * 10, sep.b() * 10));
+            //separatorsEMG.add(sep);
         }
 
         GeneralPlotter emgPlotter = new GeneralPlotter("Emg", "Frame", "Ampl", emgSignals, null, separatorsEMG, null);
