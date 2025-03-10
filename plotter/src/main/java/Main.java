@@ -1,8 +1,15 @@
 import com.github.psambit9791.jdsp.filter.Butterworth;
+import data.*;
+import data.Config;
 import enums.PaddleType;
 import enums.Side;
+import event.EventIdentifier;
+import event.PaddleEvent;
+import event.RunEvent;
+import gui.GeneralPlotter;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
+import utils.CSVInterpeter;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -160,6 +167,8 @@ public class Main {
             boolean doRunningInstead = false;
             AccelerometerData accelerometerData = CSVInterpeter.readAccelerometerData(config, true);
 
+
+
             if (config.free())
                 accelerometerData.makeFree();
             if (filtered) {
@@ -272,6 +281,8 @@ public class Main {
 
             rightPaddles.addSeries(tmp);
         }
+
+        DataProcessor.runNMF(normalized[0]);
 
         GeneralPlotter leftSidePlotter = new GeneralPlotter("Left Paddling", "Time %", "Activation", leftPaddles, null, null, new DataPair<Double, Double>(0.0, 1.0));
         GeneralPlotter rightSidePlotter = new GeneralPlotter("Right Paddling", "Time %", "Activation", rightPaddles, null, null, new DataPair<Double, Double>(0.0, 1.0));
