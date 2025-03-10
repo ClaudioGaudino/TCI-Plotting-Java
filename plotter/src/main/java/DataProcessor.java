@@ -1,6 +1,9 @@
 import enums.Side;
 import org.apache.commons.math3.analysis.interpolation.SplineInterpolator;
 import org.apache.commons.math3.analysis.polynomials.PolynomialSplineFunction;
+import org.apache.commons.math3.linear.MatrixUtils;
+import org.apache.commons.math3.linear.RealMatrix;
+import org.apache.commons.math3.
 
 import java.util.List;
 
@@ -53,9 +56,9 @@ public class DataProcessor {
         int is = (initialSide == Side.LEFT) ? 0 : 1;
 
 
-        normalizeSide(splices, is);
-
-        normalizeSide(splices, 1 - is);
+        //normalizeSide(splices, is);
+        //normalizeSide(splices, 1 - is);
+        normalizeToOwnMax(splices);
 
         int s = is;
         for (int i = 0; i < splices.length; i ++, s = 1 - s) {
@@ -75,6 +78,44 @@ public class DataProcessor {
         }
 
         return normalized;
+    }
+
+    public static NMFResult runNMF(double[][] matrix) {
+        if (matrix.length < 2)
+            throw new IllegalArgumentException("Matrix has less than 2 rows");
+
+        RealMatrix m = MatrixUtils.createRealMatrix(matrix);
+        int k = 2;
+        double vaf, prevaf = 0, improvement;
+        double minImprovement = 1;
+
+        do {
+
+
+            k++;
+        } while (k < matrix.length || improvement < minImprovement);
+
+        return new NMFResult(null, null, 0);
+    }
+
+    private static void normalizeToOwnMax(double[][][] splices) {
+        double max;
+
+        for (int i = 0; i < splices.length; i++) {
+            for (int j = 0; j < splices[0].length; j++) {
+                max = splices[i][j][0];
+
+                for (int k = 0; k < splices[0][0].length; k++) {
+                    if (splices[i][j][k] > max) {
+                        max = splices[i][j][k];
+                    }
+                }
+
+                for (int k = 0; k < splices[0][0].length; k++) {
+                    splices[i][j][k] = splices[i][j][k] / max;
+                }
+            }
+        }
     }
 
     private static void normalizeSide(double[][][] splices, int s) {
@@ -118,6 +159,14 @@ public class DataProcessor {
         for (int i = 0; i < spliceSize; i++) {
             destination[i] = spline.value(separator.a() + i * step);
         }
+    }
+
+    private double computeVAF(RealMatrix V, RealMatrix W, RealMatrix H) {
+        RealMatrix reconstruction = W.multiply(H);
+        double vNorm = V.getFrobeniusNorm();
+        double errorNorm = V.subtract(reconstruction).getFrobeniusNorm();
+
+        return 1 - (errorNorm * errorNorm) / (vNorm * vNorm);
     }
 
 
