@@ -93,12 +93,9 @@ public class DataProcessor {
 
         NMF nmf = (NMF) server.getPythonServerEntryPoint(new Class[] {NMF.class});
 
-
-
         try {
             System.out.println(matrix.length + " " + matrix[0].length);
-            List<List<List<Double>>> ret = nmf.factorize(matrix, 2);
-            System.out.println(ret);
+            System.out.println(nmf.num(5));
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
@@ -106,7 +103,7 @@ public class DataProcessor {
         }
 
         int k = 2;
-        double vaf, prevaf = 0, improvement = 10;
+        double vaf, prevvaf = 0, improvement = 10;
         double minImprovement = 1;
 
         do {

@@ -26,3 +26,4 @@ if __name__ == "__main__":
         callback_server_parameters=CallbackServerParameters(),
         python_server_entry_point=nmf
     )
+    print("Ready")

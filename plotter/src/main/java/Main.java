@@ -11,7 +11,11 @@ import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 import utils.CSVInterpeter;
 
+import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -167,6 +171,7 @@ public class Main {
             boolean doRunningInstead = false;
             AccelerometerData accelerometerData = CSVInterpeter.readAccelerometerData(config, true);
 
+            Process p = startPythonServices();
 
 
             if (config.free())
@@ -199,6 +204,10 @@ public class Main {
             } else {
                 doPaddling(config, accelerometerData);
             }
+
+
+            System.out.println("balls");
+            p.destroy();
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -286,6 +295,38 @@ public class Main {
 
         GeneralPlotter leftSidePlotter = new GeneralPlotter("Left Paddling", "Time %", "Activation", leftPaddles, null, null, new DataPair<Double, Double>(0.0, 1.0));
         GeneralPlotter rightSidePlotter = new GeneralPlotter("Right Paddling", "Time %", "Activation", rightPaddles, null, null, new DataPair<Double, Double>(0.0, 1.0));
+    }
+
+    private static Process startPythonServices() throws IOException, URISyntaxException {
+        ProcessBuilder nmfBuidler = new ProcessBuilder();
+        nmfBuidler.command("python", "python\\nmf.py");
+        nmfBuidler.directory(new File("."));
+        nmfBuidler.redirectErrorStream(true);
+        Process nmfProcess = nmfBuidler.start();
+
+        System.out.println("Python alive: " + nmfProcess.isAlive());
+
+        new Thread(() -> {
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(nmfProcess.getInputStream()))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    System.out.println("[Python][NMF]" + line);
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        });
+
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(nmfProcess.getInputStream()))) {
+            String line;
+            while (!(line = reader.readLine()).equals("Ready")) {
+
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return nmfProcess;
     }
 
     private static void doRunning(Config config, AccelerometerData accelerometerData) throws IOException {
