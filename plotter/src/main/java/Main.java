@@ -20,124 +20,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Main {
+    private static Process pyServer;
+
     public static void main(String[] args) {
-        Config config1 = new Config(
-                true,
-                "",
-                "data\\corsa1\\Accelerazioni_prova_1.emt", "data\\corsa1\\Angoli_prova_1.emt", "data\\corsa1\\Vel_ang_prova_1.emt",
-                "GSensor.X", "GSensor.Y", "GSensor.Z",
-                "GSensor.X", "GSensor.Y", "GSensor.Z",
-                "GSensor.X", "GSensor.Y", "GSensor.Z",
-                "Frame",
-                "", "", "",
-                true,false,
-                true,
-                false,
-                false,
-                true, ""
-        );
-
-        Config config2 = new Config(
-                true,
-                "",
-                "data\\accelerazione.emt", "data\\angoli.emt", "data\\vel_ang.emt",
-                "GSensor.X", "GSensor.Y", "GSensor.Z",
-                "GSensor.X", "GSensor.Y", "GSensor.Z",
-                "GSensor.X", "GSensor.Y", "GSensor.Z",
-                "Frame",
-                "", "", "",
-                true,false,
-                true,
-                false,
-                false,
-                true, ""
-        );
-
-        Config config3 = new Config(
-                true,
-                "",
-                "data\\corsa2\\Accelerazioni_prova_4.emt", "data\\corsa2\\Angoli_prova_4.emt", "data\\corsa2\\Velocita_angolari_prova_4.emt",
-                "GSensor.X", "GSensor.Y", "GSensor.Z",
-                "GSensor.X", "GSensor.Y", "GSensor.Z",
-                "GSensor.X", "GSensor.Y", "GSensor.Z",
-                "Frame",
-                "", "", "",
-                true,false,
-                true,
-                false, false, true, ""
-        );
-
-        Config marco1 = new Config(
-                false,
-                "data\\marco\\1.csv",
-                "","","",
-                "Acc_X", "Acc_Y", "Acc_Z",
-                "Euler_X", "Euler_Y", "Euler_Z",
-                "Gyr_X", "Gyr_Y", "Gyr_Z",
-                "PacketCounter",
-                "", "", "",
-                true, false,
-                true,
-                false, false, true, ""
-        );
-
-        Config marco2 = new Config(
-                false,
-                "data\\marco\\2.csv",
-                "","","",
-                "Acc_X", "Acc_Y", "Acc_Z",
-                "Euler_X", "Euler_Y", "Euler_Z",
-                "Gyr_X", "Gyr_Y", "Gyr_Z",
-                "PacketCounter",
-                "", "", "",
-                true, false,
-                true,
-                false, false, true, ""
-        );
-
-        Config marco3 = new Config(
-                false,
-                "data\\marco\\3.csv",
-                "","","",
-                "Acc_X", "Acc_Y", "Acc_Z",
-                "Euler_X", "Euler_Y", "Euler_Z",
-                "Gyr_X", "Gyr_Y", "Gyr_Z",
-                "PacketCounter",
-                "", "", "",
-                true, false,
-                true,
-                false, false, true, ""
-        );
-
-        Config pagCentro1 = new Config(
-                true,
-                "",
-                "data\\pagaiata\\centro1\\Pagaiata_centro_accelerazioni.emt", "data\\pagaiata\\centro1\\Pagaiata_centro_angoli.emt", "data\\pagaiata\\centro1\\Pagaiata_centro_velocità_angolari.emt",
-                "GSensor.X", "GSensor.Y", "GSensor.Z",
-                "GSensor.X", "GSensor.Y", "GSensor.Z",
-                "GSensor.X", "GSensor.Y", "GSensor.Z",
-                "Frame",
-                "", "", "",
-                true,false,
-                true,
-                false, false, true,
-                "data\\EMGs.csv"
-        );
-
-        Config pagEstremita1 = new Config(
-                true,
-                "",
-                "data\\pagaiata\\estremita1\\Pagaiata_estremità_accelerazioni.emt", "data\\pagaiata\\estremita1\\Pagaiata_estremità_angoli.emt", "data\\pagaiata\\estremita1\\Pagaiata_estremità_velocità_angolari.emt",
-                "GSensor.X", "GSensor.Y", "GSensor.Z",
-                "GSensor.X", "GSensor.Y", "GSensor.Z",
-                "GSensor.X", "GSensor.Y", "GSensor.Z",
-                "Frame",
-                "", "", "",
-                true,false,
-                true,
-                false, false, true, ""
-        );
-
         Config corsa3 = new Config(
                 true,
                 "",
@@ -171,7 +56,7 @@ public class Main {
             boolean doRunningInstead = false;
             AccelerometerData accelerometerData = CSVInterpeter.readAccelerometerData(config, true);
 
-            Process p = startPythonServices();
+            startPythonServices();
 
 
             if (config.free())
@@ -207,7 +92,7 @@ public class Main {
 
 
             System.out.println("balls");
-            p.destroy();
+            pyServer.destroy();
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -297,36 +182,13 @@ public class Main {
         GeneralPlotter rightSidePlotter = new GeneralPlotter("Right Paddling", "Time %", "Activation", rightPaddles, null, null, new DataPair<Double, Double>(0.0, 1.0));
     }
 
-    private static Process startPythonServices() throws IOException, URISyntaxException {
+    private static void startPythonServices() throws IOException, URISyntaxException {
         ProcessBuilder nmfBuidler = new ProcessBuilder();
         nmfBuidler.command("python", "python\\nmf.py");
         nmfBuidler.directory(new File("."));
+        nmfBuidler.inheritIO();
         nmfBuidler.redirectErrorStream(true);
-        Process nmfProcess = nmfBuidler.start();
-
-        System.out.println("Python alive: " + nmfProcess.isAlive());
-
-        new Thread(() -> {
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(nmfProcess.getInputStream()))) {
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    System.out.println("[Python][NMF]" + line);
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        });
-
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(nmfProcess.getInputStream()))) {
-            String line;
-            while (!(line = reader.readLine()).equals("Ready")) {
-
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        return nmfProcess;
+        pyServer = nmfBuidler.start();
     }
 
     private static void doRunning(Config config, AccelerometerData accelerometerData) throws IOException {

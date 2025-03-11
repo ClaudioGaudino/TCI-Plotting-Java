@@ -1,4 +1,5 @@
 from py4j.java_gateway import JavaGateway, CallbackServerParameters, GatewayParameters
+from py4j.java_collections import ListConverter
 import numpy as np
 from sklearn.decomposition import NMF
 
@@ -10,7 +11,8 @@ class NMFService(object):
         model = NMF(n_components=k, init='random', random_state=0)
         W = model.fit_transform(V)
         H = model.components_
-        return [W.tolist(), H.tolist()]
+
+        return ListConverter().convert([W.tolist(), H.tolist()], gateway._gateway_client)
 
     def num(self, n):
         return n
@@ -26,4 +28,4 @@ if __name__ == "__main__":
         callback_server_parameters=CallbackServerParameters(),
         python_server_entry_point=nmf
     )
-    print("Ready")
+    print("[Python]Ready")

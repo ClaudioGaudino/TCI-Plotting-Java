@@ -58,9 +58,6 @@ public class DataProcessor {
         double[][][] normalized = new double[2][splices[0].length][splices[0][0].length];
         int is = (initialSide == Side.LEFT) ? 0 : 1;
 
-
-        //normalizeSide(splices, is);
-        //normalizeSide(splices, 1 - is);
         normalizeToOwnMax(splices);
 
         int s = is;
@@ -92,27 +89,50 @@ public class DataProcessor {
         server.start();
 
         NMF nmf = (NMF) server.getPythonServerEntryPoint(new Class[] {NMF.class});
+        List<List<List<Double>>> tmp;
+        RealMatrix V = MatrixUtils.createRealMatrix(matrix);
+        double[][] W, H;
+        int k = 2;
+        double vaf, prevvaf = 0, improvement;
+        double minImprovement = 1;
 
         try {
-            System.out.println(matrix.length + " " + matrix[0].length);
-            System.out.println(nmf.num(5));
+            do {
+                tmp = nmf.factorize(matrix, k);
+                W = tmp.get(0)
+                        .stream()
+                        .map(innerList -> innerList.stream().mapToDouble(Double::doubleValue).toArray())
+                        .toArray(double[][]::new);;
+                H = tmp.get(1)
+                        .stream()
+                        .map(innerList -> innerList.stream().mapToDouble(Double::doubleValue).toArray())
+                        .toArray(double[][]::new);;
+
+                vaf = computeVAF(
+                        V,
+                        MatrixUtils.createRealMatrix(W),
+                        MatrixUtils.createRealMatrix(H)
+                );
+
+                if (k == 2) {
+                    improvement = 100;
+                } else {
+                    improvement = ((vaf - prevvaf) * 100) / prevvaf;
+
+                }
+
+                System.out.println("k = " + k + "\tvaf = " + vaf + "\timprovement = " + improvement);
+
+                prevvaf = vaf;
+                k++;
+            } while (k < (matrix.length - 1) && improvement >= minImprovement);
+
+            return new NMFResult(W, H, k);
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
             server.shutdown();
         }
-
-        int k = 2;
-        double vaf, prevvaf = 0, improvement = 10;
-        double minImprovement = 1;
-
-        do {
-
-
-            k++;
-        } while (k < matrix.length || improvement < minImprovement);
-
-        server.shutdown();
 
         return new NMFResult(null, null, 0);
     }
@@ -180,7 +200,7 @@ public class DataProcessor {
         }
     }
 
-    private double computeVAF(RealMatrix V, RealMatrix W, RealMatrix H) {
+    private static double computeVAF(RealMatrix V, RealMatrix W, RealMatrix H) {
         RealMatrix reconstruction = W.multiply(H);
         double vNorm = V.getFrobeniusNorm();
         double errorNorm = V.subtract(reconstruction).getFrobeniusNorm();
