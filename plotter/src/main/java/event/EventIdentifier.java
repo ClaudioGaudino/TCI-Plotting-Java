@@ -171,6 +171,7 @@ public class EventIdentifier {
 
 
             if (inLeftZone) {
+                //If this is a valley in the left zone, then it might be an event
                 eventPossible = true;
                 for (int j = Math.max(i - window, 0); j <= Math.min(i + window, angVel.size() - 1); j++) {
                     if (j == i) continue;
@@ -182,6 +183,16 @@ public class EventIdentifier {
                 }
 
                 if (eventPossible) {
+                    //If we just entered this zone, we need to check how the previous zone worked out:
+                    //it is entirely possible that the threshold was passed by just one anomalous peak that escaped filtering
+                    //in that case the previous event to this will be a HIT, which is impossible to happen right before a second HIT (the one being currently detected)
+                    //so we remove the previous HIT as well as the previous LEAVE and act as the zone change never happened
+                    if (justEntered && events.get(events.size() - 1).type() != PaddleType.LEAVE) {
+                        justEntered = false;
+                        events.remove(events.size() - 1);
+                        events.remove(events.size() - 1);
+                    }
+
                     if (justEntered) {
                         events.add(new PaddleEvent(PaddleType.HIT, Side.LEFT, i));
                         justEntered = false;
@@ -203,6 +214,12 @@ public class EventIdentifier {
                 }
 
                 if (eventPossible) {
+                    if (justEntered && events.get(events.size() - 1).type() != PaddleType.LEAVE) {
+                        justEntered = false;
+                        events.remove(events.size() - 1);
+                        events.remove(events.size() - 1);
+                    }
+
                     if (justEntered) {
                         events.add(new PaddleEvent(PaddleType.HIT, Side.RIGHT, i));
                         justEntered = false;

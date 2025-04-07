@@ -23,7 +23,7 @@ public class DataProcessor {
         double[][][] splices = new double[separators.size()][signals.size() - 2][spliceSize];
 
         for (int i = 0; i < separators.size(); i ++) {
-            //j starts at 2 to skip frame and time columns
+            //j starts at 2 to skip the frame and time columns
             for (int j = 2; j < signals.size(); j++) {
                 spliceAndResampleSingle(splices[i][j - 2], signals.get(j), separators.get(i), spliceSize);
             }
@@ -32,8 +32,8 @@ public class DataProcessor {
         return splices;
     }
 
-    public static double[][][] joinSidesAndNormalizeEMG(double[][][] splices, Side initialSide) {
-        int rightSlices = 0, leftSlices = 0;
+    public static double[][] joinSidesAndNormalizeEMG(double[][][] splices, Side initialSide) {
+        /*int rightSlices = 0, leftSlices = 0;
         if (splices.length % 2 == 0) {
             rightSlices = splices.length / 2;
             leftSlices = rightSlices;
@@ -51,11 +51,27 @@ public class DataProcessor {
                     throw new IllegalArgumentException("Initial side may not be unknown!");
                 }
             }
+        }*/
+
+        double[][] normalized = new double[splices[0].length][splices[0][0].length];
+
+        normalizeToOwnMax(splices);
+
+        for (int i = 0; i < splices.length; i++) {
+            for (int j = 0; j < splices[i].length; j++) {
+                for (int k = 0; k < splices[i][j].length; k++) {
+                    normalized[j][k] += splices[i][j][k];
+                }
+            }
         }
 
+        for (int j = 0; j < normalized.length; j++) {
+            for (int k = 0; k < normalized[0].length; k++) {
+                normalized[j][k] /= splices.length;
+            }
+        }
 
-
-        double[][][] normalized = new double[2][splices[0].length][splices[0][0].length];
+        /*double[][][] normalized = new double[2][splices[0].length][splices[0][0].length];
         int is = (initialSide == Side.LEFT) ? 0 : 1;
 
         normalizeToOwnMax(splices);
@@ -75,7 +91,7 @@ public class DataProcessor {
                     normalized[i][j][k] /= (i == is) ? leftSlices : rightSlices;
                 }
             }
-        }
+        }*/
 
         return normalized;
     }
@@ -91,10 +107,11 @@ public class DataProcessor {
         NMF nmf = (NMF) server.getPythonServerEntryPoint(new Class[] {NMF.class});
         List<List<List<Double>>> tmp;
         RealMatrix V = MatrixUtils.createRealMatrix(matrix);
+        NMFResult res = null;
         double[][] W, H;
         int k = 2;
         double vaf, prevvaf = 0, improvement;
-        double minImprovement = 1;
+        double minImprovement = 2;
 
         try {
             do {
@@ -102,11 +119,11 @@ public class DataProcessor {
                 W = tmp.get(0)
                         .stream()
                         .map(innerList -> innerList.stream().mapToDouble(Double::doubleValue).toArray())
-                        .toArray(double[][]::new);;
+                        .toArray(double[][]::new);
                 H = tmp.get(1)
                         .stream()
                         .map(innerList -> innerList.stream().mapToDouble(Double::doubleValue).toArray())
-                        .toArray(double[][]::new);;
+                        .toArray(double[][]::new);
 
                 vaf = computeVAF(
                         V,
@@ -116,9 +133,12 @@ public class DataProcessor {
 
                 if (k == 2) {
                     improvement = 100;
+                    res = new NMFResult(W, H, k);
                 } else {
                     improvement = ((vaf - prevvaf) * 100) / prevvaf;
-
+                    if (improvement >= minImprovement) {
+                        res = new NMFResult(W, H, k);
+                    }
                 }
 
                 System.out.println("k = " + k + "\tvaf = " + vaf + "\timprovement = " + improvement);
@@ -127,7 +147,7 @@ public class DataProcessor {
                 k++;
             } while (k < (matrix.length - 1) && improvement >= minImprovement);
 
-            return new NMFResult(W, H, k);
+            return res;
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
@@ -196,7 +216,7 @@ public class DataProcessor {
         double step = (separator.b() - separator.a()) / (spliceSize - 1);
 
         for (int i = 0; i < spliceSize; i++) {
-            destination[i] = spline.value(separator.a() + i * step);
+            destination[i] = spline.value(separator.a() + (i * step));
         }
     }
 
@@ -207,6 +227,4 @@ public class DataProcessor {
 
         return 1 - (errorNorm * errorNorm) / (vNorm * vNorm);
     }
-
-
 }

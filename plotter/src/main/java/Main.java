@@ -16,6 +16,9 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URISyntaxException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -50,8 +53,21 @@ public class Main {
                 false, false, true, "data\\pagaiata\\centro2\\EMG_pagaiata.emt"
         );
 
+        Config pagfull1 = new Config(
+                true, "",
+                "", "data\\pagaiata\\Prove_pagaiata_18_03\\Ang_1.emt", "data\\pagaiata\\Prove_pagaiata_18_03\\Vel_Ang_1.emt",
+                "GSensor.X", "GSensor.Y", "GSensor.Z",
+                "GSensor.X", "GSensor.Y", "GSensor.Z",
+                "GSensor.X", "GSensor.Y", "GSensor.Z",
+                "Frame",
+                "", "", "",
+                false, false,
+                true,
+                false, false, true, "data\\pagaiata\\Prove_pagaiata_18_03\\EMG_1.emt"
+        );
+
         try {
-            Config config = pagCentro2;
+            Config config = pagfull1;
             boolean filtered = true;
             boolean doRunningInstead = false;
             AccelerometerData accelerometerData = CSVInterpeter.readAccelerometerData(config, true);
@@ -91,7 +107,7 @@ public class Main {
             }
 
 
-            System.out.println("balls");
+            System.out.println("debug");
             pyServer.destroy();
 
         } catch (Exception e) {
@@ -106,19 +122,31 @@ public class Main {
         List<PaddleEvent> events = EventIdentifier.getPaddlingEvents(accelerometerData.getFreeAngVelZ(), 1, -40, 40, false);
         List<DataPair<Double, Double>> separators = new ArrayList<>();
         Side initialSide;
-        //remove possible false positive events like a starting leave or ending hit
-        if (events.get(0).type() == PaddleType.LEAVE) {
-            events.remove(0);
-        }
-        if (events.get(events.size() - 1).type() == PaddleType.HIT) {
-            events.remove(events.size() - 1);
-        }
 
-        initialSide = events.get(0).side();
+        if (!events.isEmpty()) {
+            //remove possible false positive events like a starting leave or ending hit
+            if (events.get(0).type() == PaddleType.LEAVE) {
+                events.remove(0);
+            }
 
-        //generate separators for display purposes
-        for (int i = 0; i < events.size() - 1; i += 2) {
-            separators.add(new DataPair<>((double) events.get(i).frame(), (double) events.get(i + 1).frame()));
+            for (int i = events.size() - 1; i >= 0; i--) {
+                if ((events.get(i).type() == events.get(0).type()) && (events.get(i).side() == events.get(0).side())) {
+                    break;
+                }
+                else {
+                    events.remove(i);
+                }
+            }
+
+
+            initialSide = events.get(0).side();
+
+            //generate separators for display purposes
+            for (int i = 0; i < events.size() - 1; i += 2) {
+                separators.add(new DataPair<>((double) events.get(i).frame(), (double) events.get(i + 1).frame()));
+            }
+        } else {
+            initialSide = Side.LEFT;
         }
 
         XYSeriesCollection eventCollection = makeEventCollection(events, accelerometerData);
@@ -140,55 +168,74 @@ public class Main {
         }
 
         List<DataPair<Double, Double>> separatorsEMG = new ArrayList<>();
-        for (DataPair<Double, Double> sep : separators) {
-            if (emgData.getFilteredSignals().get(2).size() < sep.b() * 10)
-                break;
+        DataPair<Double, Double> tmpSeparator = null;
+        for (int i = 0; i < events.size(); i += 4) {
+            if (i == events.size() - 1) break;
 
-            separatorsEMG.add(new DataPair<>(sep.a() * 10, sep.b() * 10));
-            //separatorsEMG.add(sep);
+            separatorsEMG.add(new DataPair<>((double) events.get(i).frame() * 10, (double) events.get(i + 4).frame() * 10));
         }
 
         GeneralPlotter emgPlotter = new GeneralPlotter("Emg", "Frame", "Ampl", emgSignals, null, separatorsEMG, null);
 
         int spliceSize = 200;
         double[][][] splices = DataProcessor.spliceAndResampleEMG(emgData.getFilteredSignals(), separatorsEMG, spliceSize);
-        double[][][] normalized = DataProcessor.joinSidesAndNormalizeEMG(splices, initialSide);
+        double[][] normalized = DataProcessor.joinSidesAndNormalizeEMG(splices, initialSide);
 
-        XYSeriesCollection leftPaddles = new XYSeriesCollection();
-        for (int i = 0; i < normalized[0].length; i++) {
-            XYSeries tmp = new XYSeries(emgData.getHeaders().get(i + 2));
+        XYSeriesCollection splice0 = new XYSeriesCollection();
+        XYSeries tmp;
+        for (int i = 0; i < splices[0].length; i++) {
+            tmp = new XYSeries(emgData.getHeaders().get(i + 2));
 
-            for (int j = 0; j < normalized[0][i].length; j++) {
-                tmp.add((double) j / spliceSize, normalized[0][i][j]);
+            for (int j = 0; j < splices[0][0].length; j++) {
+                tmp.add(j, splices[0][i][j]);
             }
 
-            leftPaddles.addSeries(tmp);
+            splice0.addSeries(tmp);
         }
 
-        XYSeriesCollection rightPaddles = new XYSeriesCollection();
-        for (int i = 0; i < normalized[1].length; i++) {
-            XYSeries tmp = new XYSeries(emgData.getHeaders().get(i + 2));
+        XYSeriesCollection paddlesNormalized = new XYSeriesCollection();
 
-            for (int j = 0; j < normalized[1][i].length; j++) {
-                tmp.add((double) j / spliceSize, normalized[1][i][j]);
+        for (int i = 0; i < normalized.length; i++) {
+            tmp = new XYSeries(emgData.getHeaders().get(i + 2));
+
+            for (int j = 0; j < normalized[0].length; j++) {
+                tmp.add(j, normalized[i][j]);
             }
 
-            rightPaddles.addSeries(tmp);
+            paddlesNormalized.addSeries(tmp);
         }
 
-        DataProcessor.runNMF(normalized[0]);
+        GeneralPlotter splicePlotter= new GeneralPlotter("Splice #0", "Time %", "Activation", splice0, null, null, new DataPair<>(0.0, 1.0));
+        GeneralPlotter paddlesPlotter = new GeneralPlotter("Normalized Paddling", "Time %", "Activation", paddlesNormalized, null, null, new DataPair<Double, Double>(0.0, 1.0));
 
-        GeneralPlotter leftSidePlotter = new GeneralPlotter("Left Paddling", "Time %", "Activation", leftPaddles, null, null, new DataPair<Double, Double>(0.0, 1.0));
-        GeneralPlotter rightSidePlotter = new GeneralPlotter("Right Paddling", "Time %", "Activation", rightPaddles, null, null, new DataPair<Double, Double>(0.0, 1.0));
+        NMFResult result = DataProcessor.runNMF(normalized);
+
+
     }
 
-    private static void startPythonServices() throws IOException, URISyntaxException {
+    private static void startPythonServices() throws IOException, URISyntaxException, InterruptedException {
         ProcessBuilder nmfBuidler = new ProcessBuilder();
         nmfBuidler.command("python", "python\\nmf.py");
         nmfBuidler.directory(new File("."));
         nmfBuidler.inheritIO();
         nmfBuidler.redirectErrorStream(true);
         pyServer = nmfBuidler.start();
+
+        Path readyFlag = Paths.get("python\\tmp.flag");
+
+        for (int i = 0; i < 20; i++) {
+            if (Files.exists(readyFlag)) {
+                try {
+                    Files.delete(readyFlag);
+                } catch (IOException e) {
+                    System.err.println("Could not delete tmp.flag file");
+                    e.printStackTrace();
+                }
+            }
+
+            Thread.sleep(500);
+        }
+
     }
 
     private static void doRunning(Config config, AccelerometerData accelerometerData) throws IOException {

@@ -5,7 +5,6 @@ import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 import utils.RotationMaths;
 
-import java.io.ObjectInputFilter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -22,7 +21,8 @@ public class AccelerometerData {
 
     private final static double G = 9.80665;
 
-    private int size;
+    private int sizeAcc;
+    private int sizeAngVel;
 
     private List<Double> accX;
     private List<Double> accY;
@@ -50,7 +50,7 @@ public class AccelerometerData {
                              List<Double> angX, List<Double> angY, List<Double> angZ,
                              List<Double> angVelX, List<Double> angVelY, List<Double> angVelZ) {
 
-        if (accX.size() != accY.size() ||
+        /*if (accX.size() != accY.size() ||
         accX.size() != accZ.size() ||
         accX.size() != angX.size() ||
         accX.size() != angY.size() ||
@@ -59,9 +59,10 @@ public class AccelerometerData {
         accX.size() != angVelY.size() ||
         accX.size() != angVelZ.size()) {
             throw new IllegalArgumentException("One or more of the data lists have a different size than the others");
-        }
+        }*/
 
-        this.size = accX.size();
+        this.sizeAcc = accX.size();
+        this.sizeAngVel = angVelX.size();
         this.accX = accX;
         this.accY = accY;
         this.accZ = accZ;
@@ -157,21 +158,20 @@ public class AccelerometerData {
         freeAngVelY = new ArrayList<>();
         freeAngVelZ = new ArrayList<>();
 
-        for (int i  = 0; i < size; i++) {
+        for (int i = 0; i < sizeAcc; i++) {
             double[] accRot = RotationMaths.rotate(angX.get(i), angY.get(i), angZ.get(i), accX.get(i), accY.get(i), accZ.get(i));
-            double[] angVelRot = RotationMaths.rotate(angX.get(i), angY.get(i), angZ.get(i), angVelX.get(i), angVelY.get(i), angVelZ.get(i));
 
             freeAccX.add(accRot[0]);
             freeAccY.add(accRot[1]);
             freeAccZ.add(accRot[2] - G);
+        }
+
+        for (int i = 0; i < sizeAngVel; i++) {
+            double[] angVelRot = RotationMaths.rotate(angX.get(i), angY.get(i), angZ.get(i), angVelX.get(i), angVelY.get(i), angVelZ.get(i));
 
             freeAngVelX.add(angVelRot[0]);
             freeAngVelY.add(angVelRot[1]);
             freeAngVelZ.add(angVelRot[2]);
-
-            if (Objects.equals(freeAccZ.get(i), accZ.get(i))) {
-                System.out.println("they equal at " + i);
-            }
         }
     }
 
@@ -179,12 +179,16 @@ public class AccelerometerData {
         XYSeriesCollection datasetAcc = new XYSeriesCollection();
         XYSeriesCollection datasetAngVel = new XYSeriesCollection();
 
+        if (config.free() && ((freeAccX == null || freeAccX.isEmpty()) || (freeAngVelX == null || freeAngVelX.isEmpty()))) {
+            makeFree();
+        }
+
         if (config.useAccMagnitude()) {
             XYSeries accMagnitudeSeries = new XYSeries("Acceleration (Magnitude)");
 
             getAccMagnitude();
 
-            for (int frame = 0; frame < size; frame++)
+            for (int frame = 0; frame < sizeAcc; frame++)
                 accMagnitudeSeries.add(frame, accMagnitude.get(frame));
 
             datasetAcc.addSeries(accMagnitudeSeries);
@@ -198,7 +202,7 @@ public class AccelerometerData {
             List<Double> localAccY = config.free() ? this.freeAccY : this.accY;
             List<Double> localAccZ = config.free() ? this.freeAccZ : this.accZ;
 
-            for (int frame = 0; frame < size; frame++) {
+            for (int frame = 0; frame < sizeAcc; frame++) {
                 if (config.plotX()) {
                     accXSeries.add(frame, localAccX.get(frame));
                 }
@@ -226,7 +230,7 @@ public class AccelerometerData {
 
             getAngVelMagnitude();
 
-            for (int frame = 0; frame < size; frame++)
+            for (int frame = 0; frame < sizeAngVel; frame++)
                 angVelMagnitudeSeries.add(frame, angVelMagnitude.get(frame));
 
             datasetAngVel.addSeries(angVelMagnitudeSeries);
@@ -240,7 +244,7 @@ public class AccelerometerData {
             List<Double> localAngVelY = config.free() ? this.freeAngVelY : this.angVelY;
             List<Double> localAngVelZ = config.free() ? this.freeAngVelZ : this.angVelZ;
 
-            for (int frame = 0; frame < size; frame++) {
+            for (int frame = 0; frame < sizeAngVel; frame++) {
                 if (config.plotX()) {
                     angVelXSeries.add(frame, localAngVelX.get(frame));
                 }
@@ -266,8 +270,8 @@ public class AccelerometerData {
         return new XYSeriesCollection[]{datasetAcc, datasetAngVel};
     }
 
-    public int getSize() {
-        return size;
+    public int getSizeAcc() {
+        return sizeAcc;
     }
 
     public List<Double> getAccX() {
@@ -330,6 +334,10 @@ public class AccelerometerData {
         return freeAngVelZ;
     }
 
+    public int getSizeAngVel() {
+        return sizeAngVel;
+    }
+
     public List<Double> getAccMagnitude() {
         if (accMagnitude == null)
             accMagnitude = calculateMagnitude(freeAccX, freeAccY, freeAccZ, false);
@@ -348,7 +356,7 @@ public class AccelerometerData {
         List<Double> mag = new ArrayList<>();
         double tmp;
 
-        for (int i = 0; i < size; i++) {
+        for (int i = 0; i < sizeAcc; i++) {
             tmp = Math.sqrt(Math.pow(x.get(i), 2) + Math.pow(y.get(i), 2) + Math.pow(z.get(i), 2)) ;
             mag.add(tmp);
         }

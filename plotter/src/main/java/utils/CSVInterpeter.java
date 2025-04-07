@@ -212,38 +212,37 @@ public class CSVInterpeter {
         }
         else {
             String filepath = config.accelerationFilePath();
-            if (config.accelerationFilePath().endsWith(".emt")) {
-                EmtFileHandler.convert(filepath);
-                filepath = filepath.replace(".emt", ".csv");
-            }
+            if (!filepath.isBlank()) {
+                if (config.accelerationFilePath().endsWith(".emt")) {
+                    EmtFileHandler.convert(filepath);
+                    filepath = filepath.replace(".emt", ".csv");
+                }
 
-            try (CSVReader accReader = new CSVReader(new FileReader(filepath))) {
-                String[] line;
-                boolean firstLine = true;
+                try (CSVReader accReader = new CSVReader(new FileReader(filepath))) {
+                    String[] line;
+                    boolean firstLine = true;
 
-                int i = 0;
-                while ((line = accReader.readNext()) != null) {
-                    if (firstLine) {
-                        int j = 0;
-                        for (String entry : line) {
-                            if (entry.equals(config.accColX())) {
-                                accOffsets[0] = j;
+                    int i = 0;
+                    while ((line = accReader.readNext()) != null) {
+                        if (firstLine) {
+                            int j = 0;
+                            for (String entry : line) {
+                                if (entry.equals(config.accColX())) {
+                                    accOffsets[0] = j;
+                                } else if (entry.equals(config.accColY())) {
+                                    accOffsets[1] = j;
+                                } else if (entry.equals(config.accColZ())) {
+                                    accOffsets[2] = j;
+                                }
+                                j++;
                             }
-                            else if (entry.equals(config.accColY())) {
-                                accOffsets[1] = j;
-                            }
-                            else if (entry.equals(config.accColZ())) {
-                                accOffsets[2] = j;
-                            }
-                            j++;
+                            firstLine = false;
+                        } else {
+                            frames.add((double) i);
+                            addEntriesSimple(accOffsets, accX, accY, accZ, line);
                         }
-                        firstLine = false;
+                        i++;
                     }
-                    else {
-                        frames.add((double) i);
-                        addEntriesSimple(accOffsets, accX, accY, accZ, line);
-                    }
-                    i++;
                 }
             }
 
