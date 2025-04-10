@@ -72,7 +72,6 @@ public class Main {
 
             startPythonServices();
 
-
             if (config.free())
                 accelerometerData.makeFree();
             if (filtered) {
@@ -104,8 +103,6 @@ public class Main {
                 doPaddling(config, accelerometerData);
             }
 
-
-            System.out.println("debug");
             pyServer.destroy();
 
         } catch (Exception e) {
@@ -116,7 +113,10 @@ public class Main {
     private static void doPaddling(Config config, AccelerometerData accelerometerData) throws IOException {
         XYSeriesCollection[] dataset = accelerometerData.getDataset(config);
 
-        //GETTING EVENTS
+        //-----------------------------------------------------------------------
+        //STEP 1 : GETTING EVENTS
+        //-----------------------------------------------------------------------
+
         List<PaddleEvent> events = EventIdentifier.getPaddlingEvents(accelerometerData.getFreeAngVelZ(), 1, -40, 40, false);
         List<DataPair<Double, Double>> separators = new ArrayList<>();
         Side initialSide;
@@ -136,7 +136,6 @@ public class Main {
                 }
             }
 
-
             initialSide = events.get(0).side();
 
             //generate separators for display purposes
@@ -149,7 +148,11 @@ public class Main {
 
         XYSeriesCollection eventCollection = makeEventCollection(events, accelerometerData);
 
-        GeneralPlotter plotter = new GeneralPlotter("Events", "Frame", "Ampl", dataset[1], eventCollection, separators, null);
+        GeneralPlotter plotter = new GeneralPlotter("Events", "Frame", "Velocità Angolare", dataset[1], eventCollection, separators, null);
+
+        //-----------------------------------------------------------------------
+        //STEP 2 : PROCESSING EMG SIGNALS
+        //-----------------------------------------------------------------------
 
         EMGData emgData = CSVInterpeter.readEMGData(config);
         emgData.filter();
@@ -183,6 +186,10 @@ public class Main {
         }
 
         GeneralPlotter emgPlotter = new GeneralPlotter("Emg", "Frame", "Ampl", emgSignals, null, separatorsEMG, null);
+
+        //-----------------------------------------------------------------------
+        //STEP 3 : RESAMPLING, NORMALIZING AND SPLITTING
+        //-----------------------------------------------------------------------
 
         int spliceSize = 200;
         double[][][] splices = DataProcessor.spliceAndResampleEMG(emgData.getFilteredSignals(), separatorsEMG, spliceSize);
@@ -226,12 +233,16 @@ public class Main {
         GeneralPlotter paddlesPlotter = new GeneralPlotter("Normalized Paddling", "Time %", "Activation",
                 paddlesNormalized, null, avgPercentSplits, new DataPair<>(0.0, 1.0), false);
 
+        //-----------------------------------------------------------------------
+        //STEP 4 : SYNERGY DETECTION
+        //-----------------------------------------------------------------------
+
         NMFResult result = DataProcessor.runNMF(normalized);
 
 
     }
 
-    private static void startPythonServices() throws IOException, URISyntaxException, InterruptedException {
+    private static void startPythonServices() throws IOException, InterruptedException {
         ProcessBuilder nmfBuidler = new ProcessBuilder();
         nmfBuidler.command("python", "python\\nmf.py");
         nmfBuidler.directory(new File("."));
@@ -239,6 +250,7 @@ public class Main {
         nmfBuidler.redirectErrorStream(true);
         pyServer = nmfBuidler.start();
 
+        //Wait for the python script to be ready by checking for the tmp.flag file
         Path readyFlag = Paths.get("python\\tmp.flag");
 
         for (int i = 0; i < 20; i++) {
@@ -251,7 +263,7 @@ public class Main {
                 }
             }
 
-            Thread.sleep(500);
+            Thread.sleep(100);
         }
 
     }

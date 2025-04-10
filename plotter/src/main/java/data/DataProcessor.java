@@ -35,6 +35,7 @@ public class DataProcessor {
 
         normalizeToOwnMax(splices);
 
+        //after normalizing each splice, average them out into the result matrix
         for (int i = 0; i < splices.length; i++) {
             for (int j = 0; j < splices[i].length; j++) {
                 for (int k = 0; k < splices[i][j].length; k++) {
@@ -117,6 +118,7 @@ public class DataProcessor {
         double startHit = 0, firstLeave = 0, midHit = 0, secondLeave = 0, endHit = 0;
         int delta;
 
+        //find the average point in which each of the events happens in each cycle of the motion as a percent value (0% = cycle start, 100% = cycle end)
         for (SpliceSeparator<Integer> separator : separators) {
             delta = separator.endHit() - separator.startHit();
 
@@ -137,44 +139,21 @@ public class DataProcessor {
     private static void normalizeToOwnMax(double[][][] splices) {
         double max;
 
+        //i iterates through the splices, j iterates through each signal in the splice (muscle), k iterates through each measurement (frame) in the signal
         for (int i = 0; i < splices.length; i++) {
             for (int j = 0; j < splices[0].length; j++) {
                 max = splices[i][j][0];
 
+                //finding the max value reached by each muscle throughout slices
                 for (int k = 0; k < splices[0][0].length; k++) {
                     if (splices[i][j][k] > max) {
                         max = splices[i][j][k];
                     }
                 }
 
+                //normalize each muscle's signal to the max value measured
                 for (int k = 0; k < splices[0][0].length; k++) {
                     splices[i][j][k] = splices[i][j][k] / max;
-                }
-            }
-        }
-    }
-
-    private static void normalizeSide(double[][][] splices, int s) {
-        double[] max = new double[splices[0].length];
-
-        for (int i = 0; i < max.length; i++) {
-            max[i] = splices[s][i][0];
-        }
-
-        for (int i = s; i < splices.length; i += 2) {
-            for (int j = 0; j < splices[i].length; j++) {
-                for (int k = 0; k < splices[i][j].length; k++) {
-                    if (splices[i][j][k] > max[j]) {
-                        max[j] = splices[i][j][k];
-                    }
-                }
-            }
-        }
-
-        for (int i = s; i < splices.length; i += 2) {
-            for (int j = 0; j < splices[i].length; j++) {
-                for (int k = 0; k < splices[i][j].length; k++) {
-                    splices[i][j][k] = splices[i][j][k] / max[j];
                 }
             }
         }
