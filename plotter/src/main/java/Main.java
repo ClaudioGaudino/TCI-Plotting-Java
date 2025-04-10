@@ -11,10 +11,8 @@ import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 import utils.CSVInterpeter;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -168,9 +166,18 @@ public class Main {
         }
 
         List<DataPair<Double, Double>> separatorsEMG = new ArrayList<>();
+        List<SpliceSeparator<Integer>> spliceSeparators = new ArrayList<>();
         DataPair<Double, Double> tmpSeparator = null;
         for (int i = 0; i < events.size(); i += 4) {
             if (i == events.size() - 1) break;
+
+            spliceSeparators.add(new SpliceSeparator<>(
+                    events.get(i).frame(),
+                    events.get(i + 1).frame(),
+                    events.get(i + 2).frame(),
+                    events.get(i + 3).frame(),
+                    events.get(i + 4).frame()
+            ));
 
             separatorsEMG.add(new DataPair<>((double) events.get(i).frame() * 10, (double) events.get(i + 4).frame() * 10));
         }
@@ -179,7 +186,8 @@ public class Main {
 
         int spliceSize = 200;
         double[][][] splices = DataProcessor.spliceAndResampleEMG(emgData.getFilteredSignals(), separatorsEMG, spliceSize);
-        double[][] normalized = DataProcessor.joinSidesAndNormalizeEMG(splices, initialSide);
+        double[][] normalized = DataProcessor.normalizeSplices(splices);
+        SpliceSeparator<Double> separatorPercents = DataProcessor.generateSplicePercentAverages(spliceSeparators, spliceSize);
 
         XYSeriesCollection splice0 = new XYSeriesCollection();
         XYSeries tmp;
@@ -205,8 +213,18 @@ public class Main {
             paddlesNormalized.addSeries(tmp);
         }
 
-        GeneralPlotter splicePlotter= new GeneralPlotter("Splice #0", "Time %", "Activation", splice0, null, null, new DataPair<>(0.0, 1.0));
-        GeneralPlotter paddlesPlotter = new GeneralPlotter("Normalized Paddling", "Time %", "Activation", paddlesNormalized, null, null, new DataPair<Double, Double>(0.0, 1.0));
+        List<Double> avgPercentSplits = new ArrayList<>();
+        double ratio = spliceSize / 100.0;
+        avgPercentSplits.add(separatorPercents.startHit() * ratio);
+        avgPercentSplits.add(separatorPercents.firstLeave() * ratio);
+        avgPercentSplits.add(separatorPercents.midHit() * ratio);
+        avgPercentSplits.add(separatorPercents.secondLeave() * ratio);
+        avgPercentSplits.add(separatorPercents.endHit() * ratio);
+
+        GeneralPlotter splicePlotter= new GeneralPlotter("Splice #0", "Time %", "Activation",
+                splice0, null, avgPercentSplits, new DataPair<>(0.0, 1.0), false);
+        GeneralPlotter paddlesPlotter = new GeneralPlotter("Normalized Paddling", "Time %", "Activation",
+                paddlesNormalized, null, avgPercentSplits, new DataPair<>(0.0, 1.0), false);
 
         NMFResult result = DataProcessor.runNMF(normalized);
 

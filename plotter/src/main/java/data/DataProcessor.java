@@ -1,7 +1,5 @@
 package data;
 
-import data.DataPair;
-import enums.Side;
 import org.apache.commons.math3.analysis.interpolation.SplineInterpolator;
 import org.apache.commons.math3.analysis.polynomials.PolynomialSplineFunction;
 import org.apache.commons.math3.linear.MatrixUtils;
@@ -32,27 +30,7 @@ public class DataProcessor {
         return splices;
     }
 
-    public static double[][] joinSidesAndNormalizeEMG(double[][][] splices, Side initialSide) {
-        /*int rightSlices = 0, leftSlices = 0;
-        if (splices.length % 2 == 0) {
-            rightSlices = splices.length / 2;
-            leftSlices = rightSlices;
-        } else {
-            switch (initialSide) {
-                case LEFT -> {
-                    leftSlices = ((splices.length - 1) / 2) + 1;
-                    rightSlices = (splices.length - 1) / 2;
-                }
-                case RIGHT -> {
-                    rightSlices = ((splices.length - 1) / 2) + 1;
-                    leftSlices = (splices.length - 1) / 2;
-                }
-                case UNKNOWN -> {
-                    throw new IllegalArgumentException("Initial side may not be unknown!");
-                }
-            }
-        }*/
-
+    public static double[][] normalizeSplices(double[][][] splices) {
         double[][] normalized = new double[splices[0].length][splices[0][0].length];
 
         normalizeToOwnMax(splices);
@@ -70,28 +48,6 @@ public class DataProcessor {
                 normalized[j][k] /= splices.length;
             }
         }
-
-        /*double[][][] normalized = new double[2][splices[0].length][splices[0][0].length];
-        int is = (initialSide == Side.LEFT) ? 0 : 1;
-
-        normalizeToOwnMax(splices);
-
-        int s = is;
-        for (int i = 0; i < splices.length; i ++, s = 1 - s) {
-            for (int j = 0; j < splices[i].length; j++) {
-                for (int k = 0; k < splices[i][j].length; k++) {
-                    normalized[s][j][k] += splices[i][j][k];
-                }
-            }
-        }
-
-        for (int i = 0; i < normalized.length; i ++) {
-            for (int j = 0; j < splices[i].length; j++) {
-                for (int k = 0; k < splices[i][j].length; k++) {
-                    normalized[i][j][k] /= (i == is) ? leftSlices : rightSlices;
-                }
-            }
-        }*/
 
         return normalized;
     }
@@ -155,6 +111,27 @@ public class DataProcessor {
         }
 
         return new NMFResult(null, null, 0);
+    }
+
+    public static SpliceSeparator<Double> generateSplicePercentAverages(List<SpliceSeparator<Integer>> separators, int spliceSize) {
+        double startHit = 0, firstLeave = 0, midHit = 0, secondLeave = 0, endHit = 0;
+        int delta;
+
+        for (SpliceSeparator<Integer> separator : separators) {
+            delta = separator.endHit() - separator.startHit();
+
+            firstLeave += (separator.firstLeave() - separator.startHit()) * 100.0 / delta;
+            midHit += (separator.midHit() - separator.startHit()) * 100.0 / delta;
+            secondLeave += (separator.secondLeave() - separator.startHit()) * 100.0 / delta;
+            endHit += (separator.endHit() - separator.startHit()) * 100.0 / delta;
+        }
+
+        firstLeave /= separators.size();
+        midHit /= separators.size();
+        secondLeave /= separators.size();
+        endHit /= separators.size();
+
+        return new SpliceSeparator<>(startHit, firstLeave, midHit, secondLeave, endHit);
     }
 
     private static void normalizeToOwnMax(double[][][] splices) {

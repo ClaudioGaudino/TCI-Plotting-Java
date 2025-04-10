@@ -13,6 +13,7 @@ import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 
 import javax.swing.*;
+import javax.xml.crypto.Data;
 import java.awt.*;
 
 import java.util.ArrayList;
@@ -23,13 +24,21 @@ public class GeneralPlotter extends JFrame {
     private XYSeriesCollection signals;
     private XYSeriesCollection pointSets;
     private List<DataPair<Double, Double>> slices;
-    private List<Double> separators;
+    private List<Double> separators = null;
     private DataPair<Double, Double> yRange;
     private ChartPanel chartPanel;
 
     private int signalsIndex, pointsIndex, sliceIndex;
 
-    public GeneralPlotter(String title, String xLabel, String yLabel, XYSeriesCollection signals, XYSeriesCollection pointSets, List<DataPair<Double, Double>> slices, DataPair<Double, Double> yRange) {
+    public GeneralPlotter(
+            String title,
+            String xLabel,
+            String yLabel,
+            XYSeriesCollection signals,
+            XYSeriesCollection pointSets,
+            List<DataPair<Double, Double>> slices,
+            DataPair<Double, Double> yRange
+    ) {
         super(title);
 
         this.title = title;
@@ -45,17 +54,43 @@ public class GeneralPlotter extends JFrame {
         pointsIndex = pointSets == null ? 0 : pointSets.getSeriesCount();
         sliceIndex = slices == null ? 0 : slices.size();
 
-        if (slices != null) {
+        if (slices != null && !slices.isEmpty()) {
             separators = new ArrayList<>();
             for (DataPair<Double, Double> slice : slices) {
                 separators.add(slice.a());
                 separators.add(slice.b());
             }
-        } else {
-            separators = null;
         }
 
+        init();
+    }
 
+    public GeneralPlotter(
+            String title,
+            String xLabel,
+            String yLabel,
+            XYSeriesCollection signals,
+            XYSeriesCollection pointSets,
+            List<Double> separators,
+            DataPair<Double, Double> yRange,
+            boolean diff
+    ) {
+        super(title);
+
+        this.title = title;
+        this.xLabel = xLabel;
+        this.yLabel = yLabel;
+
+        this.signals = signals;
+        this.pointSets = pointSets;
+        this.separators = separators;
+        this.yRange = yRange;
+        this.slices = null;
+
+        init();
+    }
+
+    private void init() {
         JFreeChart chart = makeChart(signals, pointSets, separators);
 
         JPanel leftButtons = new JPanel();
