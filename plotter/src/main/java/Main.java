@@ -245,6 +245,7 @@ public class Main {
     private static void startPythonServices() throws IOException, InterruptedException {
         ProcessBuilder nmfBuidler = new ProcessBuilder();
         nmfBuidler.command("python", "python\\nmf.py");
+        //nmfBuidler.command("python", "-v");
         nmfBuidler.directory(new File("."));
         nmfBuidler.inheritIO();
         nmfBuidler.redirectErrorStream(true);
@@ -263,7 +264,7 @@ public class Main {
                 }
             }
 
-            Thread.sleep(100);
+            Thread.sleep(250);
         }
 
     }

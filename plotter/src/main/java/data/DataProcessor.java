@@ -53,67 +53,6 @@ public class DataProcessor {
         return normalized;
     }
 
-    public static NMFResult runNMF(double[][] matrix) {
-        if (matrix.length < 2)
-            throw new IllegalArgumentException("Matrix has less than 2 rows");
-
-        GatewayServer.turnLoggingOff();
-        GatewayServer server = new GatewayServer();
-        server.start();
-
-        NMF nmf = (NMF) server.getPythonServerEntryPoint(new Class[] {NMF.class});
-        List<List<List<Double>>> tmp;
-        RealMatrix V = MatrixUtils.createRealMatrix(matrix);
-        NMFResult res = null;
-        double[][] W, H;
-        int k = 2;
-        double vaf, prevvaf = 0, improvement;
-        double minImprovement = 2;
-
-        try {
-            do {
-                tmp = nmf.factorize(matrix, k);
-                W = tmp.get(0)
-                        .stream()
-                        .map(innerList -> innerList.stream().mapToDouble(Double::doubleValue).toArray())
-                        .toArray(double[][]::new);
-                H = tmp.get(1)
-                        .stream()
-                        .map(innerList -> innerList.stream().mapToDouble(Double::doubleValue).toArray())
-                        .toArray(double[][]::new);
-
-                vaf = computeVAF(
-                        V,
-                        MatrixUtils.createRealMatrix(W),
-                        MatrixUtils.createRealMatrix(H)
-                );
-
-                if (k == 2) {
-                    improvement = 100;
-                    res = new NMFResult(W, H, k);
-                } else {
-                    improvement = ((vaf - prevvaf) * 100) / prevvaf;
-                    if (improvement >= minImprovement) {
-                        res = new NMFResult(W, H, k);
-                    }
-                }
-
-                System.out.println("k = " + k + "\tvaf = " + vaf + "\timprovement = " + improvement);
-
-                prevvaf = vaf;
-                k++;
-            } while (k < (matrix.length - 1) && improvement >= minImprovement);
-
-            return res;
-        } catch (Exception e) {
-            e.printStackTrace();
-        } finally {
-            server.shutdown();
-        }
-
-        return new NMFResult(null, null, 0);
-    }
-
     public static SpliceSeparator<Double> generateSplicePercentAverages(List<SpliceSeparator<Integer>> separators, int spliceSize) {
         double startHit = 0, firstLeave = 0, midHit = 0, secondLeave = 0, endHit = 0;
         int delta;
@@ -183,4 +122,84 @@ public class DataProcessor {
 
         return 1 - (errorNorm * errorNorm) / (vNorm * vNorm);
     }
+
+    public static NMFResult runNMF(double[][] matrix) {
+        if (matrix.length < 2)
+            throw new IllegalArgumentException("Matrix has less than 2 rows");
+
+        GatewayServer.turnLoggingOff();
+        GatewayServer server = new GatewayServer();
+        server.start();
+
+        NMF nmf = (NMF) server.getPythonServerEntryPoint(new Class[] {NMF.class});
+        List<List<List<Double>>> tmp;
+        RealMatrix V = MatrixUtils.createRealMatrix(matrix);
+        NMFResult res = null;
+        double[][] W, H;
+        int k = 2;
+        double vaf, prevvaf = 0, improvement;
+        double minImprovement = 2;
+
+        try {
+            do {
+                tmp = nmf.factorize(matrix, k);
+                W = tmp.get(0)
+                        .stream()
+                        .map(innerList -> innerList.stream().mapToDouble(Double::doubleValue).toArray())
+                        .toArray(double[][]::new);
+                H = tmp.get(1)
+                        .stream()
+                        .map(innerList -> innerList.stream().mapToDouble(Double::doubleValue).toArray())
+                        .toArray(double[][]::new);
+
+                vaf = computeVAF(
+                        V,
+                        MatrixUtils.createRealMatrix(W),
+                        MatrixUtils.createRealMatrix(H)
+                );
+
+                if (k == 2) {
+                    improvement = 100;
+                    res = new NMFResult(W, H, k);
+                } else {
+                    improvement = ((vaf - prevvaf) * 100) / prevvaf;
+                    if (improvement >= minImprovement) {
+                        res = new NMFResult(W, H, k);
+                    }
+                }
+
+                System.out.println("k = " + k + "\tvaf = " + vaf + "\timprovement = " + improvement + "%");
+
+                prevvaf = vaf;
+                k++;
+            } while (k < (matrix.length - 1) && improvement >= minImprovement);
+
+            return res;
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            server.shutdown();
+        }
+
+        return new NMFResult(null, null, 0);
+    }
+
+    public static ModuleClusterResult runModuleClustering(double[][][] Ws, int maxK, int clusteringRepeats) {
+        GatewayServer.turnLoggingOff();
+        GatewayServer server = new GatewayServer();
+        server.start();
+
+        Clusterer clusterer = (Clusterer) server.getPythonServerEntryPoint(new Class[] {Clusterer.class});
+
+        try {
+
+        } catch (Exception e) {
+
+        } finally {
+            server.shutdown();
+        }
+
+        return null;
+    }
+
 }
