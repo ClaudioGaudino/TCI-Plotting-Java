@@ -1,7 +1,19 @@
 package data;
 
-import java.util.Map;
+import java.util.List;
 
 public interface Clusterer {
-    Map<String, Object> runModuleClustering(double[][][] Ws, int maxK, int clusteringRepeats);
+    void runModuleClustering(double[][][] Ws, int maxK, int clusteringRepeats);
+
+    int getKOptimal();
+
+    List<List<Integer>> getAssignments();
+
+    List<List<Double>> getMedianProfiles();
+
+    List<List<Double>> getStdProfiles();
+
+    List<List<Double>> getIntraSimilarity();
+
+    List<List<Double>> getInterSimilarity();
 }

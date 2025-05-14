@@ -6,6 +6,8 @@ import org.apache.commons.math3.linear.MatrixUtils;
 import org.apache.commons.math3.linear.RealMatrix;
 import py4j.GatewayServer;
 
+import java.awt.geom.Arc2D;
+import java.util.ArrayList;
 import java.util.List;
 
 public class DataProcessor {
@@ -127,6 +129,17 @@ public class DataProcessor {
         if (matrix.length < 2)
             throw new IllegalArgumentException("Matrix has less than 2 rows");
 
+        List<List<Double>> listMatrix = new ArrayList<>();
+        for (double[] row : matrix) {
+            List<Double> rowList = new ArrayList<>();
+
+            for (double value : row) {
+                rowList.add(value);
+            }
+
+            listMatrix.add(rowList);
+        }
+
         GatewayServer.turnLoggingOff();
         GatewayServer server = new GatewayServer();
         server.start();
@@ -142,7 +155,7 @@ public class DataProcessor {
 
         try {
             do {
-                tmp = nmf.factorize(matrix, k);
+                tmp = nmf.factorize(listMatrix, k);
                 W = tmp.get(0)
                         .stream()
                         .map(innerList -> innerList.stream().mapToDouble(Double::doubleValue).toArray())
@@ -192,6 +205,46 @@ public class DataProcessor {
         Clusterer clusterer = (Clusterer) server.getPythonServerEntryPoint(new Class[] {Clusterer.class});
 
         try {
+            clusterer.runModuleClustering(Ws, maxK, clusteringRepeats);
+            //run all GETS
+            int optimalK = clusterer.getKOptimal();
+            List<List<Integer>> assignmentsList = clusterer.getAssignments();
+            List<List<Double>> medianProfilesList = clusterer.getMedianProfiles();
+            List<List<Double>> stdProfilesList = clusterer.getStdProfiles();
+            List<List<Double>> intraClusterSimilarityList = clusterer.getIntraSimilarity();
+            List<List<Double>> interClusterSimilarityList = clusterer.getInterSimilarity();
+
+            //convert all to arrays
+            int[][] assignments =  assignmentsList
+                    .stream()
+                    .map(innerList -> innerList.stream().mapToInt(Integer::intValue).toArray())
+                    .toArray(int[][]::new);
+            double[][] medianProfiles = medianProfilesList
+                    .stream()
+                    .map(innerList -> innerList.stream().mapToDouble(Double::doubleValue).toArray())
+                    .toArray(double[][]::new);
+            double[][] stdProfiles = stdProfilesList
+                    .stream()
+                    .map(innerList -> innerList.stream().mapToDouble(Double::doubleValue).toArray())
+                    .toArray(double[][]::new);
+            double[][] intraClusterSimilarity = intraClusterSimilarityList
+                    .stream()
+                    .map(innerList -> innerList.stream().mapToDouble(Double::doubleValue).toArray())
+                    .toArray(double[][]::new);
+            double[][] interClusterSimilarity = interClusterSimilarityList
+                    .stream()
+                    .map(innerList -> innerList.stream().mapToDouble(Double::doubleValue).toArray())
+                    .toArray(double[][]::new);
+
+            //create ClusterResult
+            return new ModuleClusterResult(
+                    optimalK,
+                    assignments,
+                    medianProfiles,
+                    stdProfiles,
+                    intraClusterSimilarity,
+                    interClusterSimilarity
+            );
 
         } catch (Exception e) {
 

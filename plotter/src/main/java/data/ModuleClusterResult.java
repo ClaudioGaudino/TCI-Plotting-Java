@@ -2,10 +2,10 @@ package data;
 
 public record ModuleClusterResult(
         int optimalK,
-        int[][] assignments, // will always be [x][3]
+        int[][] assignments,
         double[][] medianProfiles,
         double[][] stdProfiles,
-        double[][] intraClusterSimilarity, //will always be [y][2]
+        double[][] intraClusterSimilarity,
         double[][] interClusterSimilarity
 ) {
 }

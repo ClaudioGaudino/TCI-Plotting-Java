@@ -1,4 +1,5 @@
 import com.github.psambit9791.jdsp.filter.Butterworth;
+import com.opencsv.exceptions.CsvValidationException;
 import data.*;
 import data.Config;
 import enums.PaddleType;
@@ -11,6 +12,7 @@ import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 import utils.CSVInterpeter;
 
+import javax.xml.crypto.Data;
 import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -64,66 +66,105 @@ public class Main {
                 false, false, true, "data\\pagaiata\\Prove_pagaiata_18_03\\EMG_1.emt"
         );
 
+        pyServer = null;
+
         try {
-            Config config = pagfull1;
-            boolean filtered = true;
-            boolean doRunningInstead = false;
-            AccelerometerData accelerometerData = CSVInterpeter.readAccelerometerData(config, true);
+            Config config;
+            String path = "data\\pagaiata\\Prove_pagaiata_18_03\\";
+            List<NMFResult> results = new ArrayList<>();
 
             startPythonServices();
 
-            if (config.free())
-                accelerometerData.makeFree();
-            if (filtered) {
-                Butterworth b = new Butterworth(100);
-                if (config.useAccMagnitude()) {
-                    accelerometerData.filter(AccelerometerData.Axis.MAGNITUDE, AccelerometerData.Type.ACCELERATION, b, 4, 10);
-                }
-                if (config.useAngVelMagnitude()) {
-                    accelerometerData.filter(AccelerometerData.Axis.MAGNITUDE, AccelerometerData.Type.ANG_VELOCITY, b, 4, 10);
-                }
+            for (int i = 1; i < 6; i++) {
+                config = new Config(
+                        true, "",
+                        "", path + "Ang_" + i + ".emt", path + "Vel_Ang_" + i + ".emt",
+                        "GSensor.X", "GSensor.Y", "GSensor.Z",
+                        "GSensor.X", "GSensor.Y", "GSensor.Z",
+                        "GSensor.X", "GSensor.Y", "GSensor.Z",
+                        "Frame",
+                        "", "", "",
+                        false, false,
+                        true,
+                        false, false, true, path + "EMG_" + i + ".emt"
+                );
 
-                if (config.plotX()) {
-                    accelerometerData.filter(AccelerometerData.Axis.X, AccelerometerData.Type.ACCELERATION, b, 4, 10);
-                    accelerometerData.filter(AccelerometerData.Axis.X, AccelerometerData.Type.ANG_VELOCITY, b, 4, 10);
-                }
-                if (config.plotY()) {
-                    accelerometerData.filter(AccelerometerData.Axis.Y, AccelerometerData.Type.ACCELERATION, b, 4, 10);
-                    accelerometerData.filter(AccelerometerData.Axis.Y, AccelerometerData.Type.ANG_VELOCITY, b, 4, 10);
-                }
-                if (config.plotZ()) {
-                    accelerometerData.filter(AccelerometerData.Axis.Z, AccelerometerData.Type.ACCELERATION, b, 4, 10);
-                    accelerometerData.filter(AccelerometerData.Axis.Z, AccelerometerData.Type.ANG_VELOCITY, b, 4, 6);
-                }
+                System.out.println("\n\nDoing acquisition #" + i + "\n\n");
+                results.add(runOne(config, true, (i==4)));
             }
-
-            if (doRunningInstead) {
-                doRunning(config, accelerometerData);
-            } else {
-                doPaddling(config, accelerometerData);
-            }
-
-            pyServer.destroy();
 
         } catch (Exception e) {
             e.printStackTrace();
         }
+        finally {
+            if (pyServer != null)
+                pyServer.destroy();
+        }
     }
 
-    private static void doPaddling(Config config, AccelerometerData accelerometerData) throws IOException {
+    private static NMFResult runOne(Config config, boolean filtered, boolean plot) throws CsvValidationException, IOException {
+
+        System.out.println("Getting accelerometer data...");
+
+        AccelerometerData accelerometerData = CSVInterpeter.readAccelerometerData(config, true);
+
+        System.out.println("Filtering...");
+
+        if (config.free())
+            accelerometerData.makeFree();
+        if (filtered) {
+            Butterworth b = new Butterworth(100);
+            if (config.useAccMagnitude()) {
+                accelerometerData.filter(AccelerometerData.Axis.MAGNITUDE, AccelerometerData.Type.ACCELERATION, b, 4, 10);
+            }
+            if (config.useAngVelMagnitude()) {
+                accelerometerData.filter(AccelerometerData.Axis.MAGNITUDE, AccelerometerData.Type.ANG_VELOCITY, b, 4, 10);
+            }
+
+            if (config.plotX()) {
+                accelerometerData.filter(AccelerometerData.Axis.X, AccelerometerData.Type.ACCELERATION, b, 4, 10);
+                accelerometerData.filter(AccelerometerData.Axis.X, AccelerometerData.Type.ANG_VELOCITY, b, 4, 10);
+            }
+            if (config.plotY()) {
+                accelerometerData.filter(AccelerometerData.Axis.Y, AccelerometerData.Type.ACCELERATION, b, 4, 10);
+                accelerometerData.filter(AccelerometerData.Axis.Y, AccelerometerData.Type.ANG_VELOCITY, b, 4, 10);
+            }
+            if (config.plotZ()) {
+                accelerometerData.filter(AccelerometerData.Axis.Z, AccelerometerData.Type.ACCELERATION, b, 4, 10);
+                accelerometerData.filter(AccelerometerData.Axis.Z, AccelerometerData.Type.ANG_VELOCITY, b, 4, 6);
+            }
+        }
+
+        return doPaddling(config, accelerometerData, plot);
+    }
+
+    private static NMFResult doPaddling(Config config, AccelerometerData accelerometerData, boolean plot) throws IOException {
         XYSeriesCollection[] dataset = accelerometerData.getDataset(config);
 
         //-----------------------------------------------------------------------
         //STEP 1 : GETTING EVENTS
         //-----------------------------------------------------------------------
 
+        System.out.println("Getting events from Angular Velocity...");
+
         List<PaddleEvent> events = EventIdentifier.getPaddlingEvents(accelerometerData.getFreeAngVelZ(), 1, -40, 40, false);
         List<DataPair<Double, Double>> separators = new ArrayList<>();
         Side initialSide;
 
+        System.out.println(events.size() + " events identified.");
+
+        System.out.println("Getting and filtering EMG data...");
+
+        EMGData emgData = CSVInterpeter.readEMGData(config);
+        emgData.filter();
+
+        System.out.println("EMG tracks size is: " + emgData.getFilteredSignals().get(2).size());
+
         if (!events.isEmpty()) {
-            //remove possible false positive events like a starting leave or ending hit
-            if (events.get(0).type() == PaddleType.LEAVE) {
+            events.removeIf(paddleEvent -> (paddleEvent.frame() * 10) >= emgData.getFilteredSignals().get(2).size());
+
+            //remove all events at the start until the first right hit, assuring that each acquisition gets analyzed with synced up phases
+            while (events.get(0).side() != Side.RIGHT || events.get(0).type() != PaddleType.HIT) {
                 events.remove(0);
             }
 
@@ -138,24 +179,28 @@ public class Main {
 
             initialSide = events.get(0).side();
 
-            //generate separators for display purposes
-            for (int i = 0; i < events.size() - 1; i += 2) {
-                separators.add(new DataPair<>((double) events.get(i).frame(), (double) events.get(i + 1).frame()));
+            if (plot) {
+                //generate separators for display purposes
+                for (int i = 0; i < events.size() - 1; i += 2) {
+                    separators.add(new DataPair<>((double) events.get(i).frame(), (double) events.get(i + 1).frame()));
+                }
             }
         } else {
             initialSide = Side.LEFT;
         }
 
+        System.out.println(events.size() + " events left after cleanup.");
+
         XYSeriesCollection eventCollection = makeEventCollection(events, accelerometerData);
 
-        GeneralPlotter plotter = new GeneralPlotter("Events", "Frame", "Velocità Angolare", dataset[1], eventCollection, separators, null);
+        if (plot) {
+            GeneralPlotter eventPlotter = new GeneralPlotter("Events", "Frame", "Angular Velocity", dataset[1], eventCollection, separators, null);
+        }
+
 
         //-----------------------------------------------------------------------
         //STEP 2 : PROCESSING EMG SIGNALS
         //-----------------------------------------------------------------------
-
-        EMGData emgData = CSVInterpeter.readEMGData(config);
-        emgData.filter();
 
         XYSeriesCollection emgSignals = new XYSeriesCollection();
         for (int i = 2; i < emgData.getSignals().size(); i++) {
@@ -185,14 +230,21 @@ public class Main {
             separatorsEMG.add(new DataPair<>((double) events.get(i).frame() * 10, (double) events.get(i + 4).frame() * 10));
         }
 
-        GeneralPlotter emgPlotter = new GeneralPlotter("Emg", "Frame", "Ampl", emgSignals, null, separatorsEMG, null);
+        if (plot) {
+            GeneralPlotter emgPlotter = new GeneralPlotter("Emg", "Frame", "Ampl", emgSignals, null, separatorsEMG, null);
+        }
 
         //-----------------------------------------------------------------------
         //STEP 3 : RESAMPLING, NORMALIZING AND SPLITTING
         //-----------------------------------------------------------------------
 
+        System.out.println("Splicing and resampling EMG...");
+
         int spliceSize = 200;
         double[][][] splices = DataProcessor.spliceAndResampleEMG(emgData.getFilteredSignals(), separatorsEMG, spliceSize);
+
+        System.out.println("Normalizing splices...");
+
         double[][] normalized = DataProcessor.normalizeSplices(splices);
         SpliceSeparator<Double> separatorPercents = DataProcessor.generateSplicePercentAverages(spliceSeparators, spliceSize);
 
@@ -228,18 +280,21 @@ public class Main {
         avgPercentSplits.add(separatorPercents.secondLeave() * ratio);
         avgPercentSplits.add(separatorPercents.endHit() * ratio);
 
-        GeneralPlotter splicePlotter= new GeneralPlotter("Splice #0", "Time %", "Activation",
-                splice0, null, avgPercentSplits, new DataPair<>(0.0, 1.0), false);
-        GeneralPlotter paddlesPlotter = new GeneralPlotter("Normalized Paddling", "Time %", "Activation",
-                paddlesNormalized, null, avgPercentSplits, new DataPair<>(0.0, 1.0), false);
+        if (plot) {
+            GeneralPlotter splicePlotter = new GeneralPlotter("Splice #0", "Time %", "Activation",
+                    splice0, null, avgPercentSplits, new DataPair<>(0.0, 1.0), false);
+            GeneralPlotter paddlesPlotter = new GeneralPlotter("Normalized Paddling", "Time %", "Activation",
+                    paddlesNormalized, null, avgPercentSplits, new DataPair<>(0.0, 1.0), false);
+        }
 
         //-----------------------------------------------------------------------
         //STEP 4 : SYNERGY DETECTION
         //-----------------------------------------------------------------------
 
+        System.out.println("Running NMF...");
         NMFResult result = DataProcessor.runNMF(normalized);
 
-
+        return result;
     }
 
     private static void startPythonServices() throws IOException, InterruptedException {
