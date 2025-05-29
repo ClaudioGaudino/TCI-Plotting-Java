@@ -191,7 +191,7 @@ public class GeneralPlotter extends JFrame {
         add(leftButtons, BorderLayout.WEST);
         add(rightButtons, BorderLayout.EAST);
         pack();
-        setDefaultCloseOperation(EXIT_ON_CLOSE);
+        setDefaultCloseOperation(HIDE_ON_CLOSE);
         setVisible(true);
     }
 

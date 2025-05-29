@@ -8,6 +8,7 @@ import event.EventIdentifier;
 import event.PaddleEvent;
 import event.RunEvent;
 import gui.GeneralPlotter;
+import gui.SynergyPlotter;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 import utils.CSVInterpeter;
@@ -69,28 +70,15 @@ public class Main {
         pyServer = null;
 
         try {
-            Config config;
             String path = "data\\pagaiata\\Prove_pagaiata_18_03\\";
-            List<NMFResult> results = new ArrayList<>();
 
-            startPythonServices();
 
-            for (int i = 1; i < 6; i++) {
-                config = new Config(
-                        true, "",
-                        "", path + "Ang_" + i + ".emt", path + "Vel_Ang_" + i + ".emt",
-                        "GSensor.X", "GSensor.Y", "GSensor.Z",
-                        "GSensor.X", "GSensor.Y", "GSensor.Z",
-                        "GSensor.X", "GSensor.Y", "GSensor.Z",
-                        "Frame",
-                        "", "", "",
-                        false, false,
-                        true,
-                        false, false, true, path + "EMG_" + i + ".emt"
-                );
 
-                System.out.println("\n\nDoing acquisition #" + i + "\n\n");
-                results.add(runOne(config, true, (i==4)));
+            //List<NMFResult> result = runAll(path, true);
+            NMFResult result = runOne(pagfull1, true, true, false);
+
+            if (result != null) {
+                System.out.println("Success.");
             }
 
         } catch (Exception e) {
@@ -102,7 +90,41 @@ public class Main {
         }
     }
 
-    private static NMFResult runOne(Config config, boolean filtered, boolean plot) throws CsvValidationException, IOException {
+    private static List<NMFResult> runAll(String path, boolean plotSynergiesOnly) throws CsvValidationException, IOException, InterruptedException {
+        Config config;
+        List<NMFResult> results = new ArrayList<>();
+        NMFResult tmpres;
+
+        for (int i = 1; i < 6; i++) {
+            config = new Config(
+                    true, "",
+                    "", path + "Ang_" + i + ".emt", path + "Vel_Ang_" + i + ".emt",
+                    "GSensor.X", "GSensor.Y", "GSensor.Z",
+                    "GSensor.X", "GSensor.Y", "GSensor.Z",
+                    "GSensor.X", "GSensor.Y", "GSensor.Z",
+                    "Frame",
+                    "", "", "",
+                    false, false,
+                    true,
+                    false, false, true, path + "EMG_" + i + ".emt"
+            );
+
+            System.out.println("\n\nDoing acquisition #" + i + "\n\n");
+
+            tmpres = runOne(config, true, false, plotSynergiesOnly);
+
+            if (tmpres != null)
+                results.add(tmpres);
+            else
+                System.out.println("Acquisition #" + i + " returned null.");
+        }
+
+        return results;
+    }
+
+    private static NMFResult runOne(Config config, boolean filtered, boolean plot, boolean plotSynergiesOnly) throws CsvValidationException, IOException, InterruptedException {
+
+        startPythonServices();
 
         System.out.println("Getting accelerometer data...");
 
@@ -135,10 +157,14 @@ public class Main {
             }
         }
 
-        return doPaddling(config, accelerometerData, plot);
+        NMFResult result = doPaddling(config, accelerometerData, plot, plotSynergiesOnly);
+
+        pyServer.destroy();
+
+        return result;
     }
 
-    private static NMFResult doPaddling(Config config, AccelerometerData accelerometerData, boolean plot) throws IOException {
+    private static NMFResult doPaddling(Config config, AccelerometerData accelerometerData, boolean plot, boolean plotSynergiesOnly) throws IOException {
         XYSeriesCollection[] dataset = accelerometerData.getDataset(config);
 
         //-----------------------------------------------------------------------
@@ -179,7 +205,7 @@ public class Main {
 
             initialSide = events.get(0).side();
 
-            if (plot) {
+            if (plot && !plotSynergiesOnly) {
                 //generate separators for display purposes
                 for (int i = 0; i < events.size() - 1; i += 2) {
                     separators.add(new DataPair<>((double) events.get(i).frame(), (double) events.get(i + 1).frame()));
@@ -193,7 +219,7 @@ public class Main {
 
         XYSeriesCollection eventCollection = makeEventCollection(events, accelerometerData);
 
-        if (plot) {
+        if (plot && !plotSynergiesOnly) {
             GeneralPlotter eventPlotter = new GeneralPlotter("Events", "Frame", "Angular Velocity", dataset[1], eventCollection, separators, null);
         }
 
@@ -230,7 +256,7 @@ public class Main {
             separatorsEMG.add(new DataPair<>((double) events.get(i).frame() * 10, (double) events.get(i + 4).frame() * 10));
         }
 
-        if (plot) {
+        if (plot && !plotSynergiesOnly) {
             GeneralPlotter emgPlotter = new GeneralPlotter("Emg", "Frame", "Ampl", emgSignals, null, separatorsEMG, null);
         }
 
@@ -280,19 +306,23 @@ public class Main {
         avgPercentSplits.add(separatorPercents.secondLeave() * ratio);
         avgPercentSplits.add(separatorPercents.endHit() * ratio);
 
-        if (plot) {
-            GeneralPlotter splicePlotter = new GeneralPlotter("Splice #0", "Time %", "Activation",
-                    splice0, null, avgPercentSplits, new DataPair<>(0.0, 1.0), false);
+        if (plot && !plotSynergiesOnly) {
+            //GeneralPlotter splicePlotter = new GeneralPlotter("Splice #0", "Time %", "Activation",
+            //        splice0, null, avgPercentSplits, new DataPair<>(0.0, 1.0), false);
             GeneralPlotter paddlesPlotter = new GeneralPlotter("Normalized Paddling", "Time %", "Activation",
                     paddlesNormalized, null, avgPercentSplits, new DataPair<>(0.0, 1.0), false);
         }
 
         //-----------------------------------------------------------------------
-        //STEP 4 : SYNERGY DETECTION
+        //STEP 4 : SYNERGY EXTRACTION
         //-----------------------------------------------------------------------
 
         System.out.println("Running NMF...");
         NMFResult result = DataProcessor.runNMF(normalized);
+
+        if (plot || plotSynergiesOnly) {
+            new SynergyPlotter(result, "Extracted Synergies", emgData.getHeaders());
+        }
 
         return result;
     }
@@ -309,7 +339,7 @@ public class Main {
         //Wait for the python script to be ready by checking for the tmp.flag file
         Path readyFlag = Paths.get("python\\tmp.flag");
 
-        for (int i = 0; i < 20; i++) {
+        for (int i = 0; i < 15; i++) {
             if (Files.exists(readyFlag)) {
                 try {
                     Files.delete(readyFlag);
