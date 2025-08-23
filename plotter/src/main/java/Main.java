@@ -105,7 +105,7 @@ public class Main {
                     "Frame",
                     "", "", "",
                     false, false,
-                    true,
+                    false,
                     false, false, true, path + "EMG_" + i + ".emt"
             );
 
@@ -222,7 +222,6 @@ public class Main {
         if (plot && !plotSynergiesOnly) {
             GeneralPlotter eventPlotter = new GeneralPlotter("Events", "Frame", "Angular Velocity", dataset[1], eventCollection, separators, null);
         }
-
 
         //-----------------------------------------------------------------------
         //STEP 2 : PROCESSING EMG SIGNALS
